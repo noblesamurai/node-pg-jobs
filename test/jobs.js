@@ -59,13 +59,13 @@ describe('Jobs', function() {
         return jobDone(null, {
           state : 'permanently_failed',
           log: 'it failed and we are stopping here!',
-          retriesRemaining: 0 
+          retriesRemaining: 0
         }, null);
       } else {
         return jobDone(null, {
           state : 'complete',
           log: 'it worked!',
-          retriesRemaining: 0 
+          retriesRemaining: 0
         }, null);
       }
     };
@@ -168,6 +168,51 @@ describe('Jobs', function() {
             to.equal(2);
 
           clock.restore();
+          done();
+        }
+      });
+
+      // Run the test.
+      jobs.process(jobIterator);
+    });
+
+    it('provides service to a job iff job is not locked.',
+        function(done) {
+
+      // Set up some jobs.
+      jobs.setJobs([{
+        id: 1,
+        locked: true,
+        jobData: [{
+          retriesRemaining: 1
+        }],
+        processNext: moment().add('milliseconds', 1)
+      }, {
+        id: 2,
+        locked: false,
+        jobData: [{
+          retriesRemaining: 5
+        }],
+        processNext: moment().add('milliseconds', 0)
+      }, {
+        id: 3,
+        locked: false,
+        jobData: [{
+          retriesRemaining: 5
+        }],
+        processNext: moment().add('milliseconds', 10000)
+      }]);
+
+      // Set up our condition.
+      jobs.eventEmitter.on('maybeServiceJob', function() {
+        // The condition below should hold by 10 attempts to process jobs...
+        if (maybeServiceJobCount == 10) {
+          // Only the second job should have got service, six times.
+          // This test also shows starvation does not occur, as the first
+          // job should be considered for service first (but is locked).
+          // Correct behaviour is to move on to the second.
+          expect(jobUpdatedCount, 'number of times we serviced a job').
+            to.equal(6);
           done();
         }
       });
