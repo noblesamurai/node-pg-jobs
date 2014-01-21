@@ -237,6 +237,7 @@ describe('Jobs', function() {
       // Run the test.
       jobs.processNow(1, iterator, checkConditions);
     });
+    it('waits until the lock is ceeded if process() has got hold of the job');
   });
   describe('#getHistory', function() {
     it('gets the requested job history', function(done) {
@@ -269,7 +270,6 @@ describe('Jobs', function() {
       jobs.getHistory(2, cb);
     });
   });
-
 });
 
 // vim: set et sw=2 ts=2 colorcolumn=80:
