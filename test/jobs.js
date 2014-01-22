@@ -282,8 +282,37 @@ describe('Jobs', function() {
       // Run the test.
       jobs.processNow(1, iterator, checkConditions);
     });
-    it('waits until the lock is ceeded if process() has got hold of the job');
+
+    it('waits until the lock is ceeded if process() has got hold of the job',
+        function(done) {
+      // how to check:
+      // well, we run the thing, with the job marked as locked.  It should be
+      // waiting.  We then set the thing to false.  We then see that it ran.
+
+      // Set up some jobs.
+      jobs.setJobs([{
+        id: 1,
+        locked: true,
+        jobData: [{
+          retriesRemaining: 1
+        }],
+        processNext: moment().add('milliseconds', 10000).toDate()
+      }]);
+
+      var iterator = function(err, job, cb) {
+        expect(jobs.getJobs()[0].locked).to.equal(false);
+        return cb(null, job, 200);
+      };
+
+      setTimeout(function() {
+        jobs.getJobs()[0].locked = false;
+      }, 10);
+
+      // Run the test.
+      jobs.processNow(1, iterator, done);
+    });
   });
+
   describe('#getHistory', function() {
     it('gets the requested job history', function(done) {
       // Set up some jobs.
