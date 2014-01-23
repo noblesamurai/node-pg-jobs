@@ -3,16 +3,12 @@ var type = dbm.dataType;
 
 exports.up = function(db, callback) {
   var sql =
-    "CREATE TABLE jobs (" +
-        "id           integer PRIMARY KEY," +
-        "process_next timestamp with time zone," +
-        "created_at   timestamp with time zone," +
-        "modified_at  timestamp with time zone" +
-    "); " +
-    "CREATE TABLE job_data ( " +
-        "job_id       integer," +
-        "data         json," +
-        "created_at   timestamp with time zone" +
+    "CREATE TABLE jobs( " +
+        "id            serial," + // i.e. not unique but will self increment if null
+        "process_next  timestamp with time zone," +
+        "pending       boolean default true," +
+        "data          json," +
+        "created_at    timestamp NOT NULL DEFAULT now()" +
     ");";
 
   db.runSql(sql, callback);
@@ -20,10 +16,7 @@ exports.up = function(db, callback) {
 };
 
 exports.down = function(db, callback) {
-  db.dropTable('jobs', function() {
-    db.dropTable('job_data', callback);
-  });
-
+  db.dropTable('jobs', callback); 
 };
 
 // vim: set et sw=2 ts=2 colorcolumn=80:

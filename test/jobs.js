@@ -1,7 +1,8 @@
 var expect = require('chai').expect,
     moment = require('moment'),
     sinon = require('sinon'),
-    jobs = require('../lib/jobs');
+    jobs = require('../lib/jobs'),
+    jobModel = require('../models/jobs');
 
 describe('Jobs', function() {
   var db;
