@@ -2,5 +2,9 @@
   "dev": {
     "driver": "pg",
     "database": "node_pg_jobs_dev"
+  },
+  "test": {
+    "driver": "pg",
+    "database": "node_pg_jobs_test"
   }
 }

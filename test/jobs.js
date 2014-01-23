@@ -4,6 +4,22 @@ var expect = require('chai').expect,
     jobs = require('../lib/jobs');
 
 describe('Jobs', function() {
+  var db;
+  before(function(done) {
+    var pg = require('pg');
+
+    var conString = "postgres://localhost/node_pg_jobs_test";
+    db = new pg.Client(conString);
+    db.connect(function(err) {
+      if(err) {
+        console.error('could not connect to postgres', err);
+      }
+      done(err);
+    });
+  });
+  after(function() {
+    db.end();
+  });
   describe('#create', function() {
     var clock;
     before(function() {
