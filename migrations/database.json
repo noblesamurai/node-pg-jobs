@@ -1,0 +1,6 @@
+{
+  "dev": {
+    "driver": "pg",
+    "database": "node_pg_jobs_dev"
+  }
+}
