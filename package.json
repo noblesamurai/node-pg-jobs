@@ -1,0 +1,41 @@
+{
+  "name": "node-pg-jobs",
+  "version": "0.0.0",
+  "description": "A simple yet powerful postgres backed job queue for node.js with state machine like operation.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/noblesamurai/node-pg-jobs.git"
+  },
+  "keywords": [
+    "job",
+    "queue",
+    "postgres"
+  ],
+  "author": "Timothy Leslie Allen <allen.timothy.email@gmail.com> (https://github.com/timlesallen)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/noblesamurai/node-pg-jobs/issues"
+  },
+  "devDependencies": {
+    "grunt-env": "~0.4.1",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt-mocha-cli": "~1.5.0",
+    "grunt": "~0.4.2",
+    "grunt-contrib-jshint": "~0.8.0",
+    "mocha-unfunk-reporter": "~0.4.0",
+    "chai": "~1.8.1"
+  },
+  "dependencies": {
+    "async": "~0.2.9",
+    "moment": "~2.5.0",
+    "sinon": "~1.7.3",
+    "lodash": "~2.4.1"
+  }
+}
