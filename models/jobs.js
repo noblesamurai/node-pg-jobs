@@ -7,11 +7,18 @@ var jobs = sql.define({
  * @param {function} callback(err, jobId)
  */
 exports.write = function(db, id, processNext, data, callback) {
-  db.query(
-    jobs.insert([{
+  var newJob = {
       process_next: processNext.toISOString(),
       data: data
-    }]).toQuery(),
+    };
+
+  // We let the DB assign the ID if it is null
+  if(id !== null) {
+    newJob.id = id;
+  }
+
+  db.query(
+    jobs.insert([newJob]).toQuery(),
     callback
   );
 };

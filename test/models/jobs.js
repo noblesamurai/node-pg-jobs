@@ -30,34 +30,75 @@ describe('jobs model', function() {
       db.query('delete from jobs;', done);
     });
 
-    it('creates a new job on the db', function(done) {
-      function getJobCount(callback) {
-        var sql = jobsTable.select(jobsTable.count()).from(jobsTable).toQuery();
-        db.query(sql, callback);
-      }
+    function parseSingleIntDBResult(result) {
+      return parseInt(result.rows[0].value, 10);
+    }
 
-      function getMaxId(callback) {
-        db.query('select max(id) as max_id from jobs;', callback);
+    function getJobCount(callback) {
+      var sql = 'select count(*) as value from jobs;';
+      db.query(sql, parseResult);
+
+      function parseResult(err, result) {
+        if (err) callback(err);
+        callback(null, parseSingleIntDBResult(result));
       }
+    }
+
+    function getMaxId(callback) {
+      db.query('select max(id) as value from jobs;', parseResult);
+
+      function parseResult(err, result) {
+        if (err) callback(err);
+        callback(null, parseSingleIntDBResult(result));
+      }
+    }
+
+    it('creates a new job on the db with auto id if id=null', function(done) {
+      async.series({
+        runTest:      runTest,
+        finalJobCount: getJobCount,
+        maxId: getMaxId
+      },
+      checkConditions);
 
       function runTest(callback) {
         jobs.write(db, null, new Date(), {one: 1}, callback);
       }
 
+      function checkConditions (err, results) {
+        if (err) done(err);
+
+        // We wrote the job
+        expect(results.finalJobCount).to.equal(1);
+
+        // It got assign an integer ID
+        expect(results.maxId).to.be.a('number');
+        done();
+      }
+    });
+
+    it('writes a new job snapshot on the db when giving id', function(done) {
       async.series({
-        initJobCount: getJobCount,
         runTest:      runTest,
         finalJobCount: getJobCount,
         maxId: getMaxId
-      }, function(err, results) {
+      },
+      checkConditions);
+
+      function runTest(callback) {
+        jobs.write(db, 0, new Date(), {one: 1}, callback);
+      }
+
+      function checkConditions (err, results) {
         if (err) done(err);
-        console.log('results');
-        console.log(results);
-        expect(parseInt(results.initJobCount.rows[0].jobs_count, 10) + 1).to.
-          equal(parseInt(results.finalJobCount.rows[0].jobs_count,10));
-        expect(results.maxId.rows[0].max_id).to.be.a('number');
+
+        // We wrote the job
+        expect(results.finalJobCount).to.equal(1);
+
+        // It got assigned the id we requested
+        expect(results.maxId).to.equal(0);
         done();
-      });
+      }
     });
   });
 });
