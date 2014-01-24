@@ -1,35 +1,42 @@
+var sql = require('sql'),
+    async = require('async'),
+    expect = require('chai').expect;
+    jobs =  require('../../models/jobs');
+
+var db;
+var jobsTable = sql.define({
+    name: 'jobs',
+    columns: ['id', 'process_next', 'pending', 'data', 'created_at' ]
+});
+
+function connectToDB(callback) {
+  var pg = require('pg');
+
+  db = new pg.Client(process.env.DATABASE_URL);
+  db.connect(function(err) {
+    if(err) {
+      console.error('could not connect to postgres', err);
+    }
+    callback(err);
+  });
+}
 
 describe('jobs model', function() {
-  var sql = require('sql'),
-      async = require('async'),
-      expect = require('chai').expect;
-      jobs =  require('../../models/jobs');
-
-  var db;
-  var jobsTable = sql.define({
-      name: 'jobs',
-      columns: ['id', 'process_next', 'pending', 'data', 'created_at' ]
-  });
-
   before(function(done) {
-    var pg = require('pg');
-
-    db = new pg.Client(process.env.DATABASE_URL);
-    db.connect(function(err) {
-      if(err) {
-        console.error('could not connect to postgres', err);
-      }
-      done(err);
-    });
+    connectToDB(done);
   });
+
   after(function() {
     db.end();
   });
-  describe('#write', function() {
-    beforeEach(function(done) {
-      db.query('delete from jobs;', done);
-    });
 
+  beforeEach(function(done) {
+    console.log('nuking table');
+    db.query('delete from jobs;', done);
+  });
+
+
+  describe('#write', function() {
     function parseSingleIntDBResult(result) {
       return parseInt(result.rows[0].value, 10);
     }
@@ -97,6 +104,40 @@ describe('jobs model', function() {
 
         // It got assigned the id we requested
         expect(results.maxId).to.equal(0);
+        done();
+      }
+    });
+  });
+  describe('#nextToProcess', function() {
+    beforeEach(function(done) {
+      var newJobs = [{
+        id: 1,
+        process_next: '2013-01-01',
+        data: {one: "one"}
+      },
+      {
+        id: 2,
+        process_next: '2011-01-01',
+        pending: false,
+        data: {one: "one"}
+      },
+      {
+        id: 3,
+        process_next: '2012-01-01',
+        data: {two: "two"}
+      }];
+
+      var query = jobsTable.insert(newJobs).toQuery();
+      db.query(query, done);
+    });
+
+    it.only('gets the next job we should process', function(done) {
+      jobs.nextToProcess(db, checkConditions);
+
+      function checkConditions(err, job) {
+        if (err) done(err);
+
+        expect(job.id).to.equal(3);
         done();
       }
     });

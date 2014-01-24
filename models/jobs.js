@@ -30,10 +30,13 @@ exports.readHistory = function(db, id) {};
 exports.nextToProcess = function(db, callback) {
   db.query(
     jobs.select(jobs.id, jobs.data).from(jobs).where(jobs.pending.equals(true)).
-      limit(1),
-    function(err, result) {
-    }
+      order(jobs.process_next).limit(1).toQuery(),
+      pullOutJob
   );
+  function pullOutJob(err, result) {
+    if(err) callback(err);
+    callback(null, result.rows[0]);
+  }
 };
 
 // vim: set et sw=2 ts=2 colorcolumn=80:
