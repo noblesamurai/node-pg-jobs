@@ -3,27 +3,27 @@ var sql = require('sql'),
     expect = require('chai').expect;
     jobs =  require('../../models/jobs');
 
-var db;
+var db, db2;
 var jobsTable = sql.define({
     name: 'jobs',
     columns: ['id', 'process_next', 'pending', 'data', 'created_at' ]
 });
 
-function connectToDB(callback) {
+function connectToDBs(callback) {
   var pg = require('pg');
 
   db = new pg.Client(process.env.DATABASE_URL);
-  db.connect(function(err) {
-    if(err) {
-      console.error('could not connect to postgres', err);
-    }
-    callback(err);
-  });
+  db2 = new pg.Client(process.env.DATABASE_URL);
+  db.connect(nextOne);
+  function nextOne(err) {
+    if (err) return callback(err);
+    db2.connect(callback);
+  }
 }
 
 describe('jobs model', function() {
   before(function(done) {
-    connectToDB(done);
+    connectToDBs(done);
   });
 
   after(function() {
@@ -131,13 +131,32 @@ describe('jobs model', function() {
       db.query(query, done);
     });
 
-    it.only('gets the next job we should process', function(done) {
+    it('gets the next job we should process', function(done) {
       jobs.nextToProcess(db, checkConditions);
 
       function checkConditions(err, job) {
         if (err) done(err);
 
         expect(job.id).to.equal(3);
+        done();
+      }
+    });
+    it('does not get the same job twice', function(done) {
+      // Start a txn and leave it hanging.
+      db.query('begin', function(err) {
+        if (err) return done(err);
+        jobs.nextToProcess(db, runAgain);
+      });
+
+      function runAgain(err) {
+        if (err) done(err);
+        jobs.nextToProcess(db2, checkConditions);
+      }
+
+      function checkConditions(err, job) {
+        if (err) done(err);
+
+        expect(job.id).to.equal(1);
         done();
       }
     });
