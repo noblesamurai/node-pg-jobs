@@ -9,8 +9,7 @@ describe('Jobs', function() {
   before(function(done) {
     var pg = require('pg');
 
-    var conString = "postgres://localhost/node_pg_jobs_test";
-    db = new pg.Client(conString);
+    db = new pg.Client(process.env.DATABASE_URL);
     db.connect(function(err) {
       if(err) {
         console.error('could not connect to postgres', err);

@@ -5,7 +5,8 @@ module.exports = function(grunt) {
       dev: {
       },
       test: {
-        NODE_ENV:          'test'
+        NODE_ENV:          'test',
+        DATABASE_URL:      'postgres://localhost/node_pg_jobs_test'
       },
       // For running not on heroku with prod params - heroku does not use these.
       prod: {
@@ -22,7 +23,7 @@ module.exports = function(grunt) {
       }
     },
     watch: {
-      files: ['lib/**/*.js', 'test/**/*.js'],
+      files: ['lib/**/*.js', 'models/**/*.js', 'test/**/*.js'],
       tasks: 'test'
     }
   });
