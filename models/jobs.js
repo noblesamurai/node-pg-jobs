@@ -9,12 +9,10 @@ var jobs = sql.define({
 exports.write = function(db, id, processNext, data, callback) {
   db.query(
     jobs.insert([{
-      id: id,
       process_next: processNext.toISOString(),
       data: data
-    }]),
-    function(err, result) {
-    }
+    }]).toQuery(),
+    callback
   );
 };
 
