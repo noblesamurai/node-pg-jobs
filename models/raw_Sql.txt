@@ -2,7 +2,7 @@ WITH RECURSIVE candidate_job AS (
   SELECT (j).*, pg_try_advisory_xact_lock((j).id) AS locked
   FROM (
     SELECT j
-    FROM jobs AS j
+    FROM job_snapshots AS j
     WHERE process_at <= now()
     ORDER BY process_at, id
     LIMIT 1
@@ -12,7 +12,7 @@ WITH RECURSIVE candidate_job AS (
     FROM (
       SELECT (
         SELECT j
-        FROM jobs AS j
+        FROM job_snapshots AS j
         WHERE process_at <= now()
         AND (process_at, id) > (candidate_job.process_at, candidate_job.id)
         ORDER BY process_at, id

@@ -1,22 +1,21 @@
 var expect = require('chai').expect,
     moment = require('moment'),
     sinon = require('sinon'),
-    jobs = require('../lib/jobs'),
-    jobModel = require('../models/jobs');
+    async = require('async'),
+    testHelper = require('../helper'),
+    jobs = require('../../lib/jobs'),
+    jobModel = require('../../models/jobs');
 
 describe('Jobs', function() {
-  var db;
+  var db, db2;
   before(function(done) {
-    var pg = require('pg');
-
-    db = new pg.Client(process.env.DATABASE_URL);
-    db.connect(function(err) {
-      if(err) {
-        console.error('could not connect to postgres', err);
-      }
+    async.times(2, testHelper.connectToDB, function(err, results) {
+      db = results[0];
+      db2 = results[1];
       done(err);
     });
   });
+
   after(function() {
     db.end();
   });
@@ -171,7 +170,7 @@ describe('Jobs', function() {
       }], done);
     });
 
-    it.only('provides service to a job iff correct number of ms have elapsed.',
+    it('provides service to a job iff correct number of ms have elapsed.',
         function(done) {
       // Set up our condition.
       jobs.eventEmitter.on('maybeServiceJob', function() {

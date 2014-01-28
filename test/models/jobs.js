@@ -1,25 +1,18 @@
 var sql = require('sql'),
     async = require('async'),
-    expect = require('chai').expect;
+    expect = require('chai').expect,
+    testHelper = require('../helper'),
     jobs =  require('../../models/jobs');
 
-var db, db2;
-
-function connectToDBs(callback) {
-  var pg = require('pg');
-
-  db = new pg.Client(process.env.DATABASE_URL);
-  db2 = new pg.Client(process.env.DATABASE_URL);
-  db.connect(nextOne);
-  function nextOne(err) {
-    if (err) return callback(err);
-    db2.connect(callback);
-  }
-}
+var dbConnections = [];
 
 describe('jobs model', function() {
   before(function(done) {
-    connectToDBs(done);
+    async.times(2, testHelper.connectToDB, function(err, results) {
+      db = results[0];
+      db2 = results[1];
+      done(err);
+    });
   });
 
   after(function() {
