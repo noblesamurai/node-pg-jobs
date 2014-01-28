@@ -6,7 +6,7 @@ var sql = require('sql'),
 var db, db2;
 var jobsTable = sql.define({
     name: 'jobs',
-    columns: ['id', 'process_next', 'pending', 'data', 'created_at' ]
+    columns: ['id', 'process_at', 'processed', 'data', 'created_at' ]
 });
 
 function connectToDBs(callback) {
@@ -112,18 +112,23 @@ describe('jobs model', function() {
     beforeEach(function(done) {
       var newJobs = [{
         id: 1,
-        process_next: '2013-01-01',
+        process_at: '2013-01-01',
         data: {one: "one"}
       },
       {
         id: 2,
-        process_next: '2011-01-01',
-        pending: false,
+        process_at: '2011-01-01',
+        processed: '2011-01-01 01:00:00',
         data: {one: "one"}
       },
       {
         id: 3,
-        process_next: '2012-01-01',
+        process_at: '2012-01-01',
+        data: {two: "two"}
+      },
+      {
+        id: 4,
+        process_at: null,
         data: {two: "two"}
       }];
 

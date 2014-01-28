@@ -1,14 +1,16 @@
 var sql = require('sql');
 var jobs = sql.define({
     name: 'jobs',
-    columns: ['id', 'process_next', 'pending', 'data', 'created_at' ]
+    columns: ['id', 'process_at', 'processed', 'data', 'created_at' ]
 });
+
+var sqlQueries = require('./sql');
 /**
  * @param {function} callback(err, jobId)
  */
 exports.write = function(db, id, processNext, data, callback) {
   var newJob = {
-      process_next: processNext.toISOString(),
+      process_at: processNext.toISOString(),
       data: data
     };
 
@@ -27,16 +29,17 @@ exports.readLatest = function(db, id) {};
 
 exports.readHistory = function(db, id) {};
 
+/**
+ * Provide your own transaction context.
+ */
 exports.nextToProcess = function(db, callback) {
-  db.query(
-    jobs.select(jobs.id, jobs.data).from(jobs).where(jobs.pending.equals(true)).
-      order(jobs.process_next).limit(1).toQuery(),
-      pullOutJob
-  );
-  function pullOutJob(err, result) {
-    if(err) callback(err);
+  db.query(sqlQueries.obtainNextUnlockedJob, returnResult);
+
+  function returnResult(err, result) {
+    if(err) return callback(err);
     callback(null, result.rows[0]);
   }
 };
+
 
 // vim: set et sw=2 ts=2 colorcolumn=80:
