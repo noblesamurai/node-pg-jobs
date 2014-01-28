@@ -10,7 +10,7 @@ var sqlQueries = require('./sql');
  */
 exports.write = function(db, id, processNext, data, callback) {
   var newJob = {
-      process_at: processNext.toISOString(),
+      process_at: processNext ? processNext.toISOString() : null,
       data: data
     };
 
@@ -28,6 +28,15 @@ exports.write = function(db, id, processNext, data, callback) {
 exports.readLatest = function(db, id) {};
 
 exports.readHistory = function(db, id) {};
+
+exports.scheduledJobs = function(db, callback) {
+  db.query(jobs.select(jobs.star()).from(jobs).
+    where(jobs.process_at.isNotNull()).and(jobs.processed.isNull()), gotResult);
+  function gotResult(err, result) {
+    if (err) return callback(err);
+    callback(null, result.rows);
+  }
+};
 
 /**
  * Provide your own transaction context.

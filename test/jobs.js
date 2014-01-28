@@ -60,11 +60,14 @@ describe('Jobs', function() {
    */
   describe('#process', function() {
     var jobIterator = function(id, job, jobDone) {
+      console.log('user job iterator');
       function error() {
         // We just always error for this test.
         return true;
       }
 
+      console.log('user job iterator from tests:');
+      console.log(job);
       if (error() && job.retriesRemaining > 0 ) {
         return jobDone(null, {
           state: 'pending_retry',
@@ -109,7 +112,7 @@ describe('Jobs', function() {
       jobs.stopProcessing();
     });
 
-    it('re-schedules a job iff a non-null serviceNextIn property is provided',
+    it.only('re-schedules a job iff a non-null serviceNextIn property is provided',
           function(done) {
       // Set up jobs data
       jobs.setJobs([{
@@ -134,20 +137,23 @@ describe('Jobs', function() {
 
       // Set up our condition
       jobs.eventEmitter.on('jobUpdated', function() {
+        console.log('woooo!');
         // Should need 10 iterations for all jobs to retried out of existence.
         // Each job will be provided service until no retries remaining, then
         // once more to figure out that we need to permanently fail it (and
         // hence not requeue.)
         // I.e. retries remaining for each job + no. jobs initially == 10
         if (jobUpdatedCount == 10) {
-          expect(jobs.getScheduledJobs().length, 'length of job queue').
-            to.equal(0);
-          done();
+          jobs.getScheduledJobs(db, function(err, result) {
+            expect(result.length, 'length of job queue').
+              to.equal(0);
+            done();
+          });
         }
       });
 
       // Run the test
-      jobs.process(jobIterator);
+      jobs.process(db, jobIterator);
     });
 
     it('provides service to a job iff correct number of ms have elapsed.',
@@ -189,7 +195,7 @@ describe('Jobs', function() {
       });
 
       // Run the test.
-      jobs.process(jobIterator);
+      jobs.process(db, jobIterator);
     });
 
     it('provides service to a job iff job is not locked.',
