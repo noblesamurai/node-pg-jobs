@@ -112,7 +112,7 @@ describe('Jobs', function() {
       jobs.stopProcessing();
     });
 
-    it.only('re-schedules a job iff a non-null serviceNextIn property is provided',
+    it('re-schedules a job iff a non-null serviceNextIn property is provided',
           function(done) {
       // Set up jobs data
       jobs.setJobs([{
@@ -156,30 +156,23 @@ describe('Jobs', function() {
       jobs.process(db, jobIterator);
     });
 
-    it('provides service to a job iff correct number of ms have elapsed.',
-        function(done) {
-
-      // Mock out the clock.
-      clock = sinon.useFakeTimers();
-
+    before(function(done) {
       // Set up some jobs.
-      jobs.setJobs([{
-        id: 1,
-        jobData: [{
+      jobs.setJobs(db, [{
+        data: {
           retriesRemaining: 1
-        }],
-        processNext: moment().add('milliseconds', 1)
+        },
+        process_at: moment().add('milliseconds', 1)
       }, {
-        id: 2,
-        jobData: [{
+        data: {
           retriesRemaining: 5
-        }],
-        processNext: moment().add('milliseconds', 400)
-      }]);
+        },
+        process_at: moment().add('milliseconds', 4000)
+      }], done);
+    });
 
-      // Advance the clock by 40 ms.
-      clock.tick(40);
-
+    it.only('provides service to a job iff correct number of ms have elapsed.',
+        function(done) {
       // Set up our condition.
       jobs.eventEmitter.on('maybeServiceJob', function() {
         // The condition below should hold by 10 attempts to process jobs...
@@ -189,7 +182,6 @@ describe('Jobs', function() {
           expect(jobUpdatedCount, 'number of times we serviced a job').
             to.equal(2);
 
-          clock.restore();
           done();
         }
       });

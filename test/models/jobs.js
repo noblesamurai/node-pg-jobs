@@ -4,10 +4,6 @@ var sql = require('sql'),
     jobs =  require('../../models/jobs');
 
 var db, db2;
-var jobsTable = sql.define({
-    name: 'jobs',
-    columns: ['id', 'process_at', 'processed', 'data', 'created_at' ]
-});
 
 function connectToDBs(callback) {
   var pg = require('pg');
@@ -29,12 +25,6 @@ describe('jobs model', function() {
   after(function() {
     db.end();
   });
-
-  beforeEach(function(done) {
-    console.log('nuking table');
-    db.query('delete from jobs;', done);
-  });
-
 
   describe('#write', function() {
     function parseSingleIntDBResult(result) {
@@ -132,8 +122,7 @@ describe('jobs model', function() {
         data: {two: "two"}
       }];
 
-      var query = jobsTable.insert(newJobs).toQuery();
-      db.query(query, done);
+      jobsModels.setJobs(db, newJobs, done);
     });
 
     it('gets the next job we should process', function(done) {

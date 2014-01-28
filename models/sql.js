@@ -18,7 +18,7 @@ exports.obtainNextUnlockedJob =
     "SELECT (j).*, pg_try_advisory_xact_lock((j).id) AS locked " +
     "FROM ( " +
       "SELECT j " +
-      "FROM jobs AS j " +
+      "FROM job_snapshots AS j " +
       "WHERE process_at <= now() AND processed IS NULL " +
       "ORDER BY process_at, id " +
       "LIMIT 1 " +
@@ -31,7 +31,7 @@ exports.obtainNextUnlockedJob =
       "FROM ( " +
         "SELECT ( " +
           "SELECT j " +
-          "FROM jobs AS j " +
+          "FROM job_snapshots AS j " +
           "WHERE process_at <= now() AND processed IS NULL " +
           // Get the next one in line after the one we tried to lock.
           "AND (process_at, id) > (candidate_job.process_at, candidate_job.id) " +

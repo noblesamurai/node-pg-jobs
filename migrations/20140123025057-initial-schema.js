@@ -3,22 +3,23 @@ var type = dbm.dataType;
 
 exports.up = function(db, callback) {
   var sql =
-    "CREATE SEQUENCE jobs_id_seq;" +
-    "CREATE TABLE jobs( " +
-        "id            integer DEFAULT nextval('jobs_id_seq')," + // i.e. not unique but will self increment if null
+    "CREATE SEQUENCE job_snapshots_job_id_seq;" +
+    "CREATE TABLE job_snapshots( " +
+        "id            serial PRIMARY KEY, " +
+        "job_id        integer DEFAULT nextval('job_snapshots_job_id_seq')," + // i.e. not unique but will self increment if null
         "process_at    timestamp with time zone," +
         "processed     timestamp with time zone," +
         "data          json," +
         "created_at    timestamp NOT NULL DEFAULT now()" +
     ");" +
-    "ALTER SEQUENCE jobs_id_seq OWNED BY jobs.id;";
+    "ALTER SEQUENCE job_snapshots_job_id_seq OWNED BY job_snapshots.job_id;";
 
   db.runSql(sql, callback);
 
 };
 
 exports.down = function(db, callback) {
-  db.dropTable('jobs', callback);
+  db.dropTable('job_snapshots', callback);
 };
 
 // vim: set et sw=2 ts=2 colorcolumn=80:

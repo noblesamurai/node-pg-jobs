@@ -1,37 +1,52 @@
-var sql = require('sql');
-var jobs = sql.define({
-    name: 'jobs',
-    columns: ['id', 'process_at', 'processed', 'data', 'created_at' ]
+var sql = require('sql'),
+    moment = require('moment');
+var job_snapshots = sql.define({
+    name: 'job_snapshots',
+    columns: ['id', 'job_id', 'process_at', 'processed', 'data', 'created_at' ]
 });
 
 var sqlQueries = require('./sql');
+
+if (process.env.NODE_ENV === 'test') {
+  exports.setJobs = function(db, newJobs, callback) {
+    db.query('delete from job_snapshots;', insertJobs);
+    function insertJobs(err) {
+      if (err) return callback(err);
+      var query = job_snapshots.insert(newJobs).toQuery();
+      db.query(query, callback);
+    }
+  };
+}
 /**
  * @param {function} callback(err, jobId)
  */
-exports.write = function(db, id, processNext, data, callback) {
+exports.write = function(db, jobId, processNext, data, callback) {
   var newJob = {
       process_at: processNext ? processNext.toISOString() : null,
       data: data
     };
 
   // We let the DB assign the ID if it is null
-  if(id !== null) {
-    newJob.id = id;
+  if(jobId !== null) {
+    newJob.job_id = jobId;
   }
 
-  db.query(
-    jobs.insert([newJob]).toQuery(),
-    callback
-  );
+  console.log('newJob');
+  console.log(newJob);
+
+  var sql = job_snapshots.insert([newJob]).toQuery();
+  console.log(sql);
+
+  db.query(sql, callback);
 };
 
-exports.readLatest = function(db, id) {};
+exports.readLatest = function(db, jobId) {};
 
-exports.readHistory = function(db, id) {};
+exports.readHistory = function(db, jobId) {};
 
 exports.scheduledJobs = function(db, callback) {
-  db.query(jobs.select(jobs.star()).from(jobs).
-    where(jobs.process_at.isNotNull()).and(jobs.processed.isNull()), gotResult);
+  db.query(job_snapshots.select(job_snapshots.star()).from(job_snapshots).
+    where(job_snapshots.process_at.isNotNull()).and(job_snapshots.processed.isNull()), gotResult);
   function gotResult(err, result) {
     if (err) return callback(err);
     callback(null, result.rows);
@@ -46,7 +61,20 @@ exports.nextToProcess = function(db, callback) {
 
   function returnResult(err, result) {
     if(err) return callback(err);
-    callback(null, result.rows[0]);
+    updateProcessedTime(result.rows[0], function(err) {
+      if (err) return callback(err);
+      callback(null, result.rows[0]);
+    });
+  }
+
+  function updateProcessedTime(row, cb) {
+    if (row === undefined) {
+      return cb();
+    }
+    var sql = job_snapshots.update({processed: moment().toISOString()}).where(
+          job_snapshots.id.equals(row.id)).toQuery();
+    console.log(sql.toString());
+    db.query(sql, cb);
   }
 };
 
