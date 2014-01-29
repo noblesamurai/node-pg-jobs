@@ -8,7 +8,7 @@ var expect = require('chai').expect,
 
 describe('Jobs', function() {
   var db, db2;
-  before(function(done) {
+  beforeEach(function(done) {
     async.times(2, testHelper.connectToDB, function(err, results) {
       db = results[0];
       db2 = results[1];
@@ -16,7 +16,7 @@ describe('Jobs', function() {
     });
   });
 
-  after(function() {
+  afterEach(function() {
     db.end();
     db2.end();
   });
@@ -38,7 +38,7 @@ describe('Jobs', function() {
   }
 
   describe('#create', function() {
-    before(function(done) {
+    beforeEach(function(done) {
       db2.query('delete from job_snapshots', done);
     });
 
@@ -52,8 +52,8 @@ describe('Jobs', function() {
 
             expect(result.length).to.equal(1);
             expect(result[0]).to.have.property('process_at');
-            expect(result[0].process_at).to.eql(now.add('seconds',
-                100).toDate());
+            expect(moment(result[0].process_at).diff(now.add('seconds',
+                100), 'seconds')).to.equal(0);
             expect(result[0].data).to.have.property('state', 'waiting');
             done();
           });
@@ -169,7 +169,7 @@ describe('Jobs', function() {
 
     // Just binds test and prep together.
     describe('', function() {
-      before(function(done) {
+      beforeEach(function(done) {
         // Set up some jobs.
         jobs.setJobs(db, [{
           data: {
@@ -208,9 +208,9 @@ describe('Jobs', function() {
 
     // Just binds test and setup together.
     describe('', function() {
-      before(function(done) {
+      beforeEach(function(done) {
         jobs.setJobs(db, [{
-          id: 1,
+          job_id: 1,
           data: {
             retriesRemaining: 1
           },
@@ -256,7 +256,7 @@ describe('Jobs', function() {
 
     //bind setup and test together
     describe('', function() {
-      before(function(done) {
+      beforeEach(function(done) {
         jobs.setJobs(db, [{
           data: [],
           process_at: moment()
@@ -272,7 +272,7 @@ describe('Jobs', function() {
           }, null);
         };
 
-        jobs.eventEmitter.on('jobUpdated', function() {
+        jobs.eventEmitter.on('processCommitted', function() {
           jobs.stopProcessing();
           jobs.getJobs(db2, function(err, result) {
             if (err) return done(err);
@@ -287,9 +287,9 @@ describe('Jobs', function() {
   });
   describe('#processNow', function() {
     describe('', function() {
-      before(function(done) {
+      beforeEach(function(done) {
         // Set up some jobs.
-        jobs.setJobs(db, [{
+        jobs.setJobs(db2, [{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -312,7 +312,8 @@ describe('Jobs', function() {
 
         // Set up condition
         var checkConditions =  function() {
-          jobs.getJobs(db, function(err, result) {
+          console.log('checkConditions');
+          jobs.getJobs(db2, function(err, result) {
             if (err) return done(err);
             expect(result.length).to.equal(3);
             done();
@@ -320,12 +321,12 @@ describe('Jobs', function() {
         };
 
         // Run the test.
-        jobs.processNow(db, 1, iterator, checkConditions);
+        jobs.processNow(db2, 1, iterator, checkConditions);
       });
     });
 
     describe('', function() {
-      before(function(done) {
+      beforeEach(function(done) {
         // TODO: lock this job
         jobs.setJobs(db, [{
           job_id: 1,

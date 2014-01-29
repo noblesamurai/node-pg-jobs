@@ -2,21 +2,23 @@ var sql = require('sql'),
     async = require('async'),
     expect = require('chai').expect,
     testHelper = require('../helper'),
-    jobs =  require('../../models/jobs');
+    jobsModel =  require('../../models/jobs');
 
 var dbConnections = [];
 
 describe('jobs model', function() {
-  before(function(done) {
+  beforeEach(function(done) {
     async.times(2, testHelper.connectToDB, function(err, results) {
+      if (err) return done(err);
       db = results[0];
       db2 = results[1];
-      done(err);
+      db.query('delete from job_snapshots', done);
     });
   });
 
-  after(function() {
+  afterEach(function() {
     db.end();
+    db2.end();
   });
 
   describe('#write', function() {
@@ -25,7 +27,7 @@ describe('jobs model', function() {
     }
 
     function getJobCount(callback) {
-      var sql = 'select count(*) as value from jobs;';
+      var sql = 'select count(*) as value from job_snapshots;';
       db.query(sql, parseResult);
 
       function parseResult(err, result) {
@@ -35,7 +37,7 @@ describe('jobs model', function() {
     }
 
     function getMaxId(callback) {
-      db.query('select max(id) as value from jobs;', parseResult);
+      db.query('select max(job_id) as value from job_snapshots;', parseResult);
 
       function parseResult(err, result) {
         if (err) callback(err);
@@ -43,16 +45,16 @@ describe('jobs model', function() {
       }
     }
 
-    it('creates a new job on the db with auto id if id=null', function(done) {
+    it('creates a new job on the db with auto id if job_id=null', function(done) {
       async.series({
-        runTest:      runTest,
+        runTest: runTest,
         finalJobCount: getJobCount,
         maxId: getMaxId
       },
       checkConditions);
 
       function runTest(callback) {
-        jobs.write(db, null, new Date(), {one: 1}, callback);
+        jobsModel.write(db, null, new Date(), {one: 1}, callback);
       }
 
       function checkConditions (err, results) {
@@ -76,7 +78,7 @@ describe('jobs model', function() {
       checkConditions);
 
       function runTest(callback) {
-        jobs.write(db, 0, new Date(), {one: 1}, callback);
+        jobsModel.write(db, 0, new Date(), {one: 1}, callback);
       }
 
       function checkConditions (err, results) {
@@ -94,37 +96,37 @@ describe('jobs model', function() {
   describe('#nextToProcess', function() {
     beforeEach(function(done) {
       var newJobs = [{
-        id: 1,
+        job_id: 1,
         process_at: '2013-01-01',
         data: {one: "one"}
       },
       {
-        id: 2,
+        job_id: 2,
         process_at: '2011-01-01',
         processed: '2011-01-01 01:00:00',
         data: {one: "one"}
       },
       {
-        id: 3,
+        job_id: 3,
         process_at: '2012-01-01',
         data: {two: "two"}
       },
       {
-        id: 4,
+        job_id: 4,
         process_at: null,
         data: {two: "two"}
       }];
 
-      jobsModels.setJobs(db, newJobs, done);
+      jobsModel.setJobs(db, newJobs, done);
     });
 
     it('gets the next job we should process', function(done) {
-      jobs.nextToProcess(db, checkConditions);
+      jobsModel.nextToProcess(db, checkConditions);
 
       function checkConditions(err, job) {
         if (err) done(err);
 
-        expect(job.id).to.equal(3);
+        expect(job.job_id).to.equal(3);
         done();
       }
     });
@@ -132,18 +134,18 @@ describe('jobs model', function() {
       // Start a txn and leave it hanging.
       db.query('begin', function(err) {
         if (err) return done(err);
-        jobs.nextToProcess(db, runAgain);
+        jobsModel.nextToProcess(db, runAgain);
       });
 
       function runAgain(err) {
         if (err) done(err);
-        jobs.nextToProcess(db2, checkConditions);
+        jobsModel.nextToProcess(db2, checkConditions);
       }
 
       function checkConditions(err, job) {
         if (err) done(err);
 
-        expect(job.id).to.equal(1);
+        expect(job.job_id).to.equal(1);
         done();
       }
     });
