@@ -111,7 +111,7 @@ describe('Jobs', function() {
       jobs.stopProcessing();
     });
 
-    it.only('re-schedules a job iff a non-null serviceNextIn property is provided',
+    it('re-schedules a job iff a non-null serviceNextIn property is provided',
           function(done) {
       // Set up jobs data
       jobs.setJobs(db, [{
@@ -151,100 +151,108 @@ describe('Jobs', function() {
       jobs.process(db, jobIterator);
     });
 
-    before(function(done) {
-      // Set up some jobs.
-      jobs.setJobs(db, [{
-        data: {
-          retriesRemaining: 1
-        },
-        process_at: moment().add('milliseconds', 1)
-      }, {
-        data: {
-          retriesRemaining: 5
-        },
-        process_at: moment().add('milliseconds', 4000)
-      }], done);
+    // Just binds test and prep together.
+    describe('', function() {
+      before(function(done) {
+        // Set up some jobs.
+        jobs.setJobs(db, [{
+          data: {
+            retriesRemaining: 1,
+            wee: 'wah'
+          },
+          process_at: moment().add('milliseconds', 1)
+        }, {
+          data: {
+            retriesRemaining: 5,
+            boo: 'hoo'
+          },
+          process_at: moment().add('milliseconds', 40000)
+        }], done);
+      });
+
+      it.only('provides service to a job iff correct number of ms have elapsed.',
+          function(done) {
+        // Set up our condition.
+        jobs.eventEmitter.on('maybeServiceJob', function() {
+          // The condition below should hold by 10 attempts to process jobs...
+          if (maybeServiceJobCount == 10) {
+            // Only the first job should have got service, and only twice as it
+            // only had one retry remaining.
+            expect(jobUpdatedCount, 'number of times we serviced a job').
+              to.equal(2);
+
+            done();
+          }
+        });
+
+        // Run the test.
+        jobs.process(db, jobIterator);
+      });
     });
 
-    it('provides service to a job iff correct number of ms have elapsed.',
-        function(done) {
-      // Set up our condition.
-      jobs.eventEmitter.on('maybeServiceJob', function() {
-        // The condition below should hold by 10 attempts to process jobs...
-        if (maybeServiceJobCount == 10) {
-          // Only the first job should have got service, and only twice as it
-          // only had one retry remaining.
-          expect(jobUpdatedCount, 'number of times we serviced a job').
-            to.equal(2);
+    // Just binds test and setup together.
+    describe('', function() {
+      before(function(done) {
+        jobs.setJobs(db, [{
+          id: 1,
+          data: {
+            retriesRemaining: 1
+          },
+          process_at: moment().add('milliseconds', 0)
+        }, {
+          data: {
+            retriesRemaining: 5
+          },
+          process_at: moment().add('milliseconds', 0)
+        }, {
+          data: {
+            retriesRemaining: 5
+          },
+          process_at: moment().add('milliseconds', 10000)
+        }], lockFirstJob);
 
-          done();
+        function lockFirstJob() {
+          db2.query('begin', doLocks);
+          function doLocks(err, result) {
+            if (err) return done(err);
+            // Note: In this test we use the job_snapshot id not the job_id as
+            // that is how the locking is done in the query that grabs the next
+            // job.
+            // This only locks one row (not all the snapshots for the job). It
+            // probably would be fine to lock on the job_id, but it is not
+            // necessary as we should only ever have one snapshot of a given job
+            // that is up for processing...
+            db2.query('select pg_try_advisory_xact_lock(id) from job_snapshots ' +
+                'where id = 1', gotLock);
+          }
+          function gotLock(err, result) {
+            console.log('result of test lock:');
+            console.log(result);
+            done(err);
+          }
         }
       });
 
-      // Run the test.
-      jobs.process(db, jobIterator);
-    });
+      it('provides service to a job iff job is not locked.',
+          function(done) {
 
-    before(function(done) {
-      jobs.setJobs(db, [{
-        id: 1,
-        data: {
-          retriesRemaining: 1
-        },
-        process_at: moment().add('milliseconds', 0)
-      }, {
-        data: {
-          retriesRemaining: 5
-        },
-        process_at: moment().add('milliseconds', 0)
-      }, {
-        data: {
-          retriesRemaining: 5
-        },
-        process_at: moment().add('milliseconds', 10000)
-      }], lockFirstJob);
+        // Set up our condition.
+        jobs.eventEmitter.on('maybeServiceJob', function() {
+          // The condition below should hold by 10 attempts to process jobs...
+          if (maybeServiceJobCount == 10) {
+            // Only the second job should have got service, six times.
+            // This test also shows starvation does not occur, as the first
+            // job should be considered for service first (but is locked).
+            // Correct behaviour is to move on to the second.
+            expect(jobUpdatedCount, 'number of times we serviced a job').
+              to.equal(6);
+            done();
+          }
+        });
 
-      function lockFirstJob() {
-        db2.query('begin', doLocks);
-        function doLocks(err, result) {
-          if (err) return done(err);
-          // Note: In this test we use the job_snapshot id not the job_id as
-          // that is how the locking is done in the query that grabs the next
-          // job.
-          // This only locks one row (not all the snapshots for the job). It
-          // probably would be fine to lock on the job_id, but it is not
-          // necessary as we should only ever have one snapshot of a given job
-          // that is up for processing...
-          db2.query('select pg_try_advisory_xact_lock(id) from job_snapshots ' +
-              'where id = 1', gotLock);
-        }
-        function gotLock(err, result) {
-          console.log('result of test lock:');
-          console.log(result);
-          done(err);
-        }
-      }
-    });
-
-    it('provides service to a job iff job is not locked.',
-        function(done) {
-
-      // Set up our condition.
-      jobs.eventEmitter.on('maybeServiceJob', function() {
-        // The condition below should hold by 10 attempts to process jobs...
-        if (maybeServiceJobCount == 10) {
-          // Only the second job should have got service, six times.
-          // This test also shows starvation does not occur, as the first
-          // job should be considered for service first (but is locked).
-          // Correct behaviour is to move on to the second.
-          expect(jobUpdatedCount, 'number of times we serviced a job').
-            to.equal(6);
-          done();
-        }
+        // Run the test.
+        jobs.process(db, jobIterator);
       });
-
-      // Run the test.
-      jobs.process(db, jobIterator);
     });
 
     it('saves the newJobData in a job, appending it to the history of job data',
