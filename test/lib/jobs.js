@@ -52,13 +52,13 @@ describe('Jobs', function() {
 
             expect(result.length).to.equal(1);
             expect(result[0]).to.have.property('process_at');
-            expect(result[0].process_at).to.eql(now.add('milliseconds',
+            expect(result[0].process_at).to.eql(now.add('seconds',
                 100).toDate());
             expect(result[0].data).to.have.property('state', 'waiting');
             done();
           });
         };
-        jobs.create(db, {state: 'waiting', date: 'some'}, 100, cb);
+        jobs.create(db, {state: 'waiting', date: 'some'}, 100 * 1000, cb);
       });
   });
 
@@ -342,7 +342,7 @@ describe('Jobs', function() {
         }
       });
 
-      it.only('waits until the lock is ceeded if process() has got hold of the job',
+      it('waits until the lock is ceeded if process() has got hold of the job',
           function(done) {
         // We first obtain a lock on the job. Then we run processNow().
         // It should be waiting.  We then release our lock.  We then see that
@@ -386,7 +386,7 @@ describe('Jobs', function() {
     it('pays attention to the payload');
   });
 
-  describe('#getHistory', function() {
+  describe.skip('#getHistory', function() {
     it('gets the requested job history', function(done) {
       // Set up some jobs.
       jobs.setJobs([{
