@@ -11,8 +11,10 @@ if (process.env.NODE_ENV === 'test') {
   exports.setJobs = function(db, newJobs, callback) {
     db.query('delete from job_snapshots;', insertJobs);
     function insertJobs(err) {
+      console.log('insertJobs');
       if (err) return callback(err);
       var query = job_snapshots.insert(newJobs).toQuery();
+      console.log(query);
       db.query(query, callback);
     }
   };
@@ -24,6 +26,7 @@ if (process.env.NODE_ENV === 'test') {
     });
   };
 }
+
 /**
  * @param {function} callback(err, jobId)
  */

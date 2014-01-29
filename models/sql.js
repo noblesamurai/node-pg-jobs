@@ -54,5 +54,5 @@ exports.obtainNextUnlockedJob =
   "SELECT * FROM candidate_job where locked";
 
   exports.obtainLockForJob =
-  "select *, pg_advisory_xact_lock(job_id) FROM job_snapshots WHERE " +
+  "select *, pg_advisory_xact_lock(id) FROM job_snapshots WHERE " +
   "job_id = $1 AND processed IS NULL";

@@ -18,7 +18,25 @@ describe('Jobs', function() {
 
   after(function() {
     db.end();
+    db2.end();
   });
+
+  function lockJob(db, jobId, callback) {
+    db2.query('begin', doLocks);
+    function doLocks(err, result) {
+      if (err) return done(err);
+      // Note: In this test we use the job_snapshot id not the job_id as
+      // that is how the locking is done in the query that grabs the next
+      // job.
+      // This only locks one row (not all the snapshots for the job). It
+      // probably would be fine to lock on the job_id, but it is not
+      // necessary as we should only ever have one snapshot of a given job
+      // that is up for processing...
+      db2.query('select pg_try_advisory_xact_lock(id) from job_snapshots ' +
+          'where job_id = $1 and processed IS NULL', [jobId], callback);
+    }
+  }
+
   describe('#create', function() {
     before(function(done) {
       db2.query('delete from job_snapshots', done);
@@ -210,24 +228,7 @@ describe('Jobs', function() {
         }], lockFirstJob);
 
         function lockFirstJob() {
-          db2.query('begin', doLocks);
-          function doLocks(err, result) {
-            if (err) return done(err);
-            // Note: In this test we use the job_snapshot id not the job_id as
-            // that is how the locking is done in the query that grabs the next
-            // job.
-            // This only locks one row (not all the snapshots for the job). It
-            // probably would be fine to lock on the job_id, but it is not
-            // necessary as we should only ever have one snapshot of a given job
-            // that is up for processing...
-            db2.query('select pg_try_advisory_xact_lock(id) from job_snapshots ' +
-                'where id = 1', gotLock);
-          }
-          function gotLock(err, result) {
-            console.log('result of test lock:');
-            console.log(result);
-            done(err);
-          }
+          lockJob(db2, 1, done);
         }
       });
 
@@ -303,7 +304,7 @@ describe('Jobs', function() {
         }], done);
       });
 
-      it.only('immediately runs the callback on the requested job, updating it',
+      it('immediately runs the callback on the requested job, updating it',
           function(done) {
         var iterator = function(err, job, cb) {
           return cb(null, job, 200);
@@ -323,33 +324,63 @@ describe('Jobs', function() {
       });
     });
 
-    it('waits until the lock is ceeded if process() has got hold of the job',
-        function(done) {
-      // how to check:
-      // well, we run the thing, with the job marked as locked.  It should be
-      // waiting.  We then set the thing to false.  We then see that it ran.
+    describe('', function() {
+      before(function(done) {
+        // TODO: lock this job
+        jobs.setJobs(db, [{
+          job_id: 1,
+          data: {
+            retriesRemaining: 1
+          },
+          process_at: moment().add('milliseconds', 10000).toDate()
+        }], lockFirstJob);
 
-      // Set up some jobs.
-      jobs.setJobs([{
-        id: 1,
-        locked: true,
-        jobData: [{
-          retriesRemaining: 1
-        }],
-        processNext: moment().add('milliseconds', 10000).toDate()
-      }]);
+        function lockFirstJob(err) {
+          if (err) return done(err);
+          console.log('lockFirstJob');
+          lockJob(db2, 1, done);
+        }
+      });
 
-      var iterator = function(err, job, cb) {
-        expect(jobs.getJobs()[0].locked).to.equal(false);
-        return cb(null, job, 200);
-      };
+      it.only('waits until the lock is ceeded if process() has got hold of the job',
+          function(done) {
+        // We first obtain a lock on the job. Then we run processNow().
+        // It should be waiting.  We then release our lock.  We then see that
+        // it ran.
 
-      setTimeout(function() {
-        jobs.getJobs()[0].locked = false;
-      }, 10);
+        var iterator = function(err, job, cb) {
+          jobs.getJobs(db, function(err, result) {
+            if (err) return done(err);
+            return cb(null, job, 200);
+          });
+        };
 
-      // Run the test.
-      jobs.processNow(1, iterator, done);
+        var wasWaiting = false;
+
+        jobs.eventEmitter.on('lockSought', function() {
+          console.log('lockSought');
+          // Yes, this is hacky.  We assume that the obtaining of the lock
+          // will always take < 100ms.  I could mock out the DB, but this would
+          // then be less 'realistic'.  Open to suggestions on how to do this
+          // better!
+          setTimeout(shouldBeWaiting, 100);
+        });
+
+        function shouldBeWaiting() {
+          wasWaiting = true;
+          db2.query('commit');
+        }
+
+        jobs.eventEmitter.on('lockObtained', function(err) {
+          if (err) return done(err);
+          console.log('lockObtained');
+          expect(wasWaiting).to.equal(true);
+          done();
+        });
+
+        // Run the test.
+        jobs.processNow(db, 1, iterator, done);
+      });
     });
 
     it('pays attention to the payload');
