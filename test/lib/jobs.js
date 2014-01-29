@@ -170,7 +170,7 @@ describe('Jobs', function() {
         }], done);
       });
 
-      it.only('provides service to a job iff correct number of ms have elapsed.',
+      it('provides service to a job iff correct number of ms have elapsed.',
           function(done) {
         // Set up our condition.
         jobs.eventEmitter.on('maybeServiceJob', function() {
@@ -255,34 +255,35 @@ describe('Jobs', function() {
       });
     });
 
-    it('saves the newJobData in a job, appending it to the history of job data',
-        function(done) {
-      var now = moment();
-      var sometimeSoon = now.add('milliseconds', 5);
-
-      jobs.setJobs([{
-        id: 1,
-        jobData: [],
-        processNext: now
-      }]);
-
-      var iterator = function(id, job, cb) {
-        return cb(null, {
-          state : 'complete',
-           name: "tim"
-        }, 5);
-      };
-
-      jobs.eventEmitter.on('jobUpdated', function() {
-        if (jobUpdatedCount == 1) {
-          expect(jobs.getJobs()[0]).to.have.property('jobData').with.length(1);
-          expect(jobs.getJobs()[0].jobData[0]).to.deep.equal(
-              {state: "complete", name: "tim"});
-          done();
-        }
+    //bind setup and test together
+    describe('', function() {
+      before(function(done) {
+        jobs.setJobs(db, [{
+          data: [],
+          process_at: moment()
+        }], done);
       });
 
-      jobs.process(iterator);
+      it.only('saves the newJobData in a job, appending it to the history of job data',
+          function(done) {
+        var iterator = function(id, job, cb) {
+          return cb(null, {
+            state: 'complete',
+            name: "tim"
+          }, null);
+        };
+
+        jobs.eventEmitter.on('jobUpdated', function() {
+          jobs.stopProcessing();
+          jobs.getJobs(db2, function(err, result) {
+            if (err) return done(err);
+            expect(result).to.have.length(2);
+            done();
+          });
+        });
+
+        jobs.process(db, iterator);
+      });
     });
   });
   describe('#processNow', function() {

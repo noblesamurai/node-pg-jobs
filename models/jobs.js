@@ -16,6 +16,13 @@ if (process.env.NODE_ENV === 'test') {
       db.query(query, callback);
     }
   };
+  exports.getJobs = function(db, callback) {
+    var query = job_snapshots.select(job_snapshots.star()).toQuery();
+    db.query(query, function(err, result) {
+      if (err) return callback(err);
+      callback(null, result.rows);
+    });
+  };
 }
 /**
  * @param {function} callback(err, jobId)
