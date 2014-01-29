@@ -85,5 +85,14 @@ exports.nextToProcess = function(db, callback) {
   }
 };
 
+exports.obtainLock = function(db, jobId, callback) {
+  console.log('obtainLock() for job id ' + jobId);
+  db.query(sqlQueries.obtainLockForJob, [jobId], gotResult);
+
+  function gotResult(err, result) {
+    if (err) return callback(err);
+    callback(null, result.rows[0]);
+  }
+};
 
 // vim: set et sw=2 ts=2 colorcolumn=80:

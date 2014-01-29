@@ -24,7 +24,7 @@ describe('Jobs', function() {
       db2.query('delete from job_snapshots', done);
     });
 
-    it.only('creates a job with given initial state, time ' +
+    it('creates a job with given initial state, time ' +
       'to process in and payload, returning said job as well.',
       function(done) {
         var now = moment();
@@ -285,35 +285,42 @@ describe('Jobs', function() {
     });
   });
   describe('#processNow', function() {
-    it('immediately runs the callback on the requested job, updating it',
-        function(done) {
-      // Set up some jobs.
-      jobs.setJobs([{
-        id: 1,
-        jobData: [{
-          retriesRemaining: 1
-        }],
-        processNext: moment().add('milliseconds', 10000).toDate()
-      }, {
-        id: 2,
-        jobData: [{
-          retriesRemaining: 5
-        }],
-        processNext: moment().add('milliseconds', 40000).toDate()
-      }]);
+    describe('', function() {
+      before(function(done) {
+        // Set up some jobs.
+        jobs.setJobs(db, [{
+          job_id: 1,
+          data: {
+            retriesRemaining: 1
+          },
+          process_at: moment().add('milliseconds', 10000).toDate()
+        }, {
+          job_id: 2,
+          data: {
+            retriesRemaining: 5
+          },
+          process_at: moment().add('milliseconds', 40000).toDate()
+        }], done);
+      });
 
-      var iterator = function(err, job, cb) {
-        return cb(null, job, 200);
-      };
+      it.only('immediately runs the callback on the requested job, updating it',
+          function(done) {
+        var iterator = function(err, job, cb) {
+          return cb(null, job, 200);
+        };
 
-      // Set up condition
-      var checkConditions =  function() {
-        expect(jobs.getJobs()[0].jobData.length).to.equal(2);
-        done();
-      };
+        // Set up condition
+        var checkConditions =  function() {
+          jobs.getJobs(db, function(err, result) {
+            if (err) return done(err);
+            expect(result.length).to.equal(3);
+            done();
+          });
+        };
 
-      // Run the test.
-      jobs.processNow(1, iterator, checkConditions);
+        // Run the test.
+        jobs.processNow(db, 1, iterator, checkConditions);
+      });
     });
 
     it('waits until the lock is ceeded if process() has got hold of the job',
@@ -344,6 +351,8 @@ describe('Jobs', function() {
       // Run the test.
       jobs.processNow(1, iterator, done);
     });
+
+    it('pays attention to the payload');
   });
 
   describe('#getHistory', function() {

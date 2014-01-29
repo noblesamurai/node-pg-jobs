@@ -52,3 +52,7 @@ exports.obtainNextUnlockedJob =
   // one we couldn't. (Hence the "where locked" so we get an empty result set
   // in that case).
   "SELECT * FROM candidate_job where locked";
+
+  exports.obtainLockForJob =
+  "select *, pg_advisory_xact_lock(job_id) FROM job_snapshots WHERE " +
+  "job_id = $1 AND processed IS NULL";
