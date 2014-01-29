@@ -1,4 +1,7 @@
-
+/**
+ * @param {int} number Not used.  Just there so this fits the signature wanted
+ *                     by async.times().
+ */
 exports.connectToDB = function(number, callback) {
   var pg = require('pg');
 

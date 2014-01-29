@@ -1,3 +1,5 @@
+// Just a version of the 'raw' sql (which may or may not be up
+// to date with what's in the sql.js file) for manual testing etc.
 WITH RECURSIVE candidate_job AS (
   SELECT (j).*, pg_try_advisory_xact_lock((j).id) AS locked
   FROM (
