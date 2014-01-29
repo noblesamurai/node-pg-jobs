@@ -111,32 +111,28 @@ describe('Jobs', function() {
       jobs.stopProcessing();
     });
 
-    it('re-schedules a job iff a non-null serviceNextIn property is provided',
+    it.only('re-schedules a job iff a non-null serviceNextIn property is provided',
           function(done) {
       // Set up jobs data
-      jobs.setJobs([{
-        id: 1,
-        jobData: [{
+      jobs.setJobs(db, [{
+        data: {
           retriesRemaining: 3
-        }],
-        processNext: moment().add('milliseconds', 1)
+        },
+        process_at: moment().add('milliseconds', 1)
       }, {
-        id: 2,
-        jobData: [{
+        data: {
           retriesRemaining: 2
-        }],
-        processNext: moment().add('milliseconds', 4)
+        },
+        process_at: moment().add('milliseconds', 4)
       }, {
-        id: 3,
-        jobData: [{
+        data: {
           retriesRemaining: 2
-        }],
-        processNext: moment().add('milliseconds', 5)
+        },
+        process_at: moment().add('milliseconds', 5)
       }]);
 
       // Set up our condition
       jobs.eventEmitter.on('jobUpdated', function() {
-        console.log('woooo!');
         // Should need 10 iterations for all jobs to retried out of existence.
         // Each job will be provided service until no retries remaining, then
         // once more to figure out that we need to permanently fail it (and
@@ -219,8 +215,8 @@ describe('Jobs', function() {
           // probably would be fine to lock on the job_id, but it is not
           // necessary as we should only ever have one snapshot of a given job
           // that is up for processing...
-          db2.query('select pg_try_advisory_xact_lock(id) from job_snapshots where id = 1',
-              gotLock);
+          db2.query('select pg_try_advisory_xact_lock(id) from job_snapshots ' +
+              'where id = 1', gotLock);
         }
         function gotLock(err, result) {
           console.log('result of test lock:');
@@ -230,7 +226,7 @@ describe('Jobs', function() {
       }
     });
 
-    it.only('provides service to a job iff job is not locked.',
+    it('provides service to a job iff job is not locked.',
         function(done) {
 
       // Set up our condition.
