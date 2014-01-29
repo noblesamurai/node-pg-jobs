@@ -316,6 +316,7 @@ describe('Jobs', function() {
           jobs.getJobs(db2, function(err, result) {
             if (err) return done(err);
             expect(result.length).to.equal(3);
+            expect(result[2].data).to.have.property('retriesRemaining');
             done();
           });
         };
@@ -383,8 +384,6 @@ describe('Jobs', function() {
         jobs.processNow(db, 1, iterator, done);
       });
     });
-
-    it('pays attention to the payload');
   });
 
   describe.skip('#getHistory', function() {
