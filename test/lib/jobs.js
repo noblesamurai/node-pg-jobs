@@ -189,32 +189,49 @@ describe('Jobs', function() {
       jobs.process(db, jobIterator);
     });
 
-    it('provides service to a job iff job is not locked.',
-        function(done) {
-
-      // Set up some jobs.
-      jobs.setJobs([{
+    before(function(done) {
+      jobs.setJobs(db, [{
         id: 1,
-        locked: true,
-        jobData: [{
+        data: {
           retriesRemaining: 1
-        }],
-        processNext: moment().add('milliseconds', 1)
+        },
+        process_at: moment().add('milliseconds', 0)
       }, {
-        id: 2,
-        locked: false,
-        jobData: [{
+        data: {
           retriesRemaining: 5
-        }],
-        processNext: moment().add('milliseconds', 0)
+        },
+        process_at: moment().add('milliseconds', 0)
       }, {
-        id: 3,
-        locked: false,
-        jobData: [{
+        data: {
           retriesRemaining: 5
-        }],
-        processNext: moment().add('milliseconds', 10000)
-      }]);
+        },
+        process_at: moment().add('milliseconds', 10000)
+      }], lockFirstJob);
+
+      function lockFirstJob() {
+        db2.query('begin', doLocks);
+        function doLocks(err, result) {
+          if (err) return done(err);
+          // Note: In this test we use the job_snapshot id not the job_id as
+          // that is how the locking is done in the query that grabs the next
+          // job.
+          // This only locks one row (not all the snapshots for the job). It
+          // probably would be fine to lock on the job_id, but it is not
+          // necessary as we should only ever have one snapshot of a given job
+          // that is up for processing...
+          db2.query('select pg_try_advisory_xact_lock(id) from job_snapshots where id = 1',
+              gotLock);
+        }
+        function gotLock(err, result) {
+          console.log('result of test lock:');
+          console.log(result);
+          done(err);
+        }
+      }
+    });
+
+    it.only('provides service to a job iff job is not locked.',
+        function(done) {
 
       // Set up our condition.
       jobs.eventEmitter.on('maybeServiceJob', function() {
@@ -231,7 +248,7 @@ describe('Jobs', function() {
       });
 
       // Run the test.
-      jobs.process(jobIterator);
+      jobs.process(db, jobIterator);
     });
 
     it('saves the newJobData in a job, appending it to the history of job data',
