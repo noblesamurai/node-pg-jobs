@@ -3,12 +3,12 @@ exports.obtainNextUnlockedJob =
   // http://www.postgresql.org/docs/9.3/static/queries-with.html. Note that it
   // is a little confusing and slightly inaccurate at time of writing.
 
-  // A temp table (referred to as temp_table below) is initially populated with
+  // A temp table (referred to as candidate_job below) is initially populated with
   // the first job that requires service.
   // Then, the second ("recursive") section is run repeatedly until we either
-  // have been through the whole table of have managed to lock a job.
+  // have been through the whole table or have managed to lock a job.
   // The final select section at the end runs when the "recursive" section
-  // did not add any row to the temp_table last time it ran.
+  // did not add any row to the temp table last time it ran.
     "WITH RECURSIVE candidate_job AS (" +
     // Run this first, see whether the first one is locked.
     // Row will come into the temp table along with whether locked.
@@ -23,9 +23,9 @@ exports.obtainNextUnlockedJob =
       "ORDER BY process_at, id " +
       "LIMIT 1 " +
     ") AS t1 " +
-    // This will keep outputting a new row whilst ever the last row in
-    // temp_table was not successfully locked. It will replace what is in the
-    // temp_table.
+    // This will keep outputting a new row whilst ever the last row in the
+    // temp table was not successfully locked. It will replace what is in the
+    // temp table.
     "UNION ALL ( " +
       "SELECT (j).*, pg_try_advisory_xact_lock((j).id) AS locked " +
       "FROM ( " +
