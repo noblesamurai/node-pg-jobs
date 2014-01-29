@@ -20,29 +20,27 @@ describe('Jobs', function() {
     db.end();
   });
   describe('#create', function() {
-    var clock;
-    before(function() {
-      // Mock out the clock.
-      clock = sinon.useFakeTimers();
+    before(function(done) {
+      db2.query('delete from job_snapshots', done);
     });
 
-    after(function() {
-      clock.restore();
-    });
-
-    it('creates a job with given initial state, time ' +
+    it.only('creates a job with given initial state, time ' +
       'to process in and payload, returning said job as well.',
       function(done) {
-        var jobLen = jobs.getJobs().length;
         var now = moment();
         var cb = function() {
-          expect(jobs.getJobs()[0]).to.have.property('processNext');
-          expect(jobs.getJobs()[0].processNext).to.eql(now.add('milliseconds',
-              100).toDate());
-          expect(jobs.getJobs()[0].jobData[0]).to.have.property('state');
-          done();
+          jobs.getJobs(db, function(err, result) {
+            if (err) return done(err);
+
+            expect(result.length).to.equal(1);
+            expect(result[0]).to.have.property('process_at');
+            expect(result[0].process_at).to.eql(now.add('milliseconds',
+                100).toDate());
+            expect(result[0].data).to.have.property('state', 'waiting');
+            done();
+          });
         };
-        jobs.create( {state: 'waiting', date: 'some'}, 100, cb);
+        jobs.create(db, {state: 'waiting', date: 'some'}, 100, cb);
       });
   });
 
@@ -264,7 +262,7 @@ describe('Jobs', function() {
         }], done);
       });
 
-      it.only('saves the newJobData in a job, appending it to the history of job data',
+      it('saves the newJobData in a job, appending it to the history of job data',
           function(done) {
         var iterator = function(id, job, cb) {
           return cb(null, {
