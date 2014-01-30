@@ -1,8 +1,7 @@
 var sql = require('sql'),
     async = require('async'),
     expect = require('chai').expect,
-    testHelper = require('../helper'),
-    jobsModel =  require('../../models/jobs');
+    testHelper = require('../helper');
 
 var dbConnections = [];
 
@@ -12,6 +11,7 @@ describe('jobs model', function() {
       if (err) return done(err);
       db = results[0];
       db2 = results[1];
+      jobsModel =  require('../../models/jobs')(db);
       db.query('delete from job_snapshots', done);
     });
   });
@@ -54,7 +54,7 @@ describe('jobs model', function() {
       checkConditions);
 
       function runTest(callback) {
-        jobsModel.write(db, null, new Date(), {one: 1}, callback);
+        jobsModel.write(null, new Date(), {one: 1}, callback);
       }
 
       function checkConditions (err, results) {
@@ -78,7 +78,7 @@ describe('jobs model', function() {
       checkConditions);
 
       function runTest(callback) {
-        jobsModel.write(db, 0, new Date(), {one: 1}, callback);
+        jobsModel.write(0, new Date(), {one: 1}, callback);
       }
 
       function checkConditions (err, results) {
@@ -117,11 +117,11 @@ describe('jobs model', function() {
         data: {two: "two"}
       }];
 
-      jobsModel.setJobs(db, newJobs, done);
+      jobsModel.setJobs(newJobs, done);
     });
 
     it('gets the next job we should process', function(done) {
-      jobsModel.nextToProcess(db, checkConditions);
+      jobsModel.nextToProcess(checkConditions);
 
       function checkConditions(err, job) {
         if (err) done(err);
@@ -134,12 +134,12 @@ describe('jobs model', function() {
       // Start a txn and leave it hanging.
       db.query('begin', function(err) {
         if (err) return done(err);
-        jobsModel.nextToProcess(db, runAgain);
+        jobsModel.nextToProcess(runAgain);
       });
 
       function runAgain(err) {
         if (err) done(err);
-        jobsModel.nextToProcess(db2, checkConditions);
+        jobsModel.nextToProcess(checkConditions);
       }
 
       function checkConditions(err, job) {

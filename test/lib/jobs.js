@@ -3,8 +3,7 @@ var expect = require('chai').expect,
     sinon = require('sinon'),
     async = require('async'),
     _ = require('lodash'),
-    testHelper = require('../helper'),
-    jobModel = require('../../models/jobs');
+    testHelper = require('../helper');
 
 describe('Jobs', function() {
   var dbs = [];
@@ -13,6 +12,7 @@ describe('Jobs', function() {
     async.times(2, testHelper.connectToDB, function(err, results) {
       dbs = results;
       jobs = require('../../lib/jobs')(dbs[0]);
+      jobModel = require('../../models/jobs')(dbs[1]);
       done(err);
     });
   });
@@ -47,7 +47,7 @@ describe('Jobs', function() {
       function(done) {
         var now = moment();
         var cb = function() {
-          jobModel.getJobs(dbs[0], function(err, result) {
+          jobModel.getJobs(function(err, result) {
             if (err) return done(err);
 
             expect(result.length).to.equal(1);
@@ -130,7 +130,7 @@ describe('Jobs', function() {
     it('re-schedules a job iff a non-null serviceNextIn property is provided',
           function(done) {
       // Set up jobs data
-      jobModel.setJobs(dbs[0], [{
+      jobModel.setJobs([{
         data: {
           retriesRemaining: 3
         },
@@ -155,7 +155,7 @@ describe('Jobs', function() {
         // hence not requeue.)
         // I.e. retries remaining for each job + no. jobs initially == 10
         if (jobUpdatedCount == 10) {
-          jobModel.scheduledJobs(dbs[0], function(err, result) {
+          jobModel.scheduledJobs(function(err, result) {
             expect(result.length, 'length of job queue').
               to.equal(0);
             done();
@@ -171,7 +171,7 @@ describe('Jobs', function() {
     describe('with a delayed job', function() {
       beforeEach(function(done) {
         // Set up some jobs.
-        jobModel.setJobs(dbs[0], [{
+        jobModel.setJobs([{
           data: {
             retriesRemaining: 1,
             wee: 'wah'
@@ -209,7 +209,7 @@ describe('Jobs', function() {
     // Just binds test and setup together.
     describe('with a locked job', function() {
       beforeEach(function(done) {
-        jobModel.setJobs(dbs[0], [{
+        jobModel.setJobs([{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -257,7 +257,7 @@ describe('Jobs', function() {
     //bind setup and test together
     describe('when called on a job', function() {
       beforeEach(function(done) {
-        jobModel.setJobs(dbs[0], [{
+        jobModel.setJobs([{
           data: [],
           process_at: moment()
         }], done);
@@ -274,7 +274,7 @@ describe('Jobs', function() {
 
         jobs.eventEmitter.on('processCommitted', function() {
           jobs.stopProcessing();
-          jobModel.getJobs(dbs[1], function(err, result) {
+          jobModel.getJobs(function(err, result) {
             if (err) return done(err);
             expect(result).to.have.length(2);
             done();
@@ -289,7 +289,7 @@ describe('Jobs', function() {
     describe('when called on a not locked job', function() {
       beforeEach(function(done) {
         // Set up some jobs.
-        jobModel.setJobs(dbs[1], [{
+        jobModel.setJobs([{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -313,7 +313,7 @@ describe('Jobs', function() {
         // Set up condition
         var checkConditions =  function() {
           console.log('checkConditions');
-          jobModel.getJobs(dbs[1], function(err, result) {
+          jobModel.getJobs(function(err, result) {
             if (err) return done(err);
             expect(result.length).to.equal(3);
             expect(result[2].data).to.have.property('retriesRemaining');
@@ -328,7 +328,7 @@ describe('Jobs', function() {
 
     describe('when called on a locked job', function() {
       beforeEach(function(done) {
-        jobModel.setJobs(dbs[0], [{
+        jobModel.setJobs([{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -350,7 +350,7 @@ describe('Jobs', function() {
         // it ran.
 
         var iterator = function(err, job, cb) {
-          jobModel.getJobs(dbs[0], function(err, result) {
+          jobModel.getJobs(function(err, result) {
             if (err) return done(err);
             return cb(null, job, 200);
           });
