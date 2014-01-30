@@ -77,10 +77,12 @@ module.exports = function(db) {
   };
 
   JobSnapshotsModel.commitTxn = function(callback) {
+    console.log('commit txn');
     db.query('commit', callback);
   };
 
   JobSnapshotsModel.rollbackTxn = function(callback) {
+    console.log('rollback txn');
     db.query('rollback', callback);
   };
 

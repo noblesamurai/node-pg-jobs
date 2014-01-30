@@ -75,14 +75,11 @@ describe('Jobs', function() {
    */
   describe('#process', function() {
     var jobIterator = function(id, job, jobDone) {
-      console.log('user job iterator');
       function error() {
         // We just always error for this test.
         return true;
       }
 
-      console.log('user job iterator from tests:');
-      console.log(job);
       if (error() && job.retriesRemaining > 0 ) {
         return jobDone(null, {
           state: 'pendingRetry',
@@ -312,7 +309,6 @@ describe('Jobs', function() {
 
         // Set up condition
         var checkConditions =  function() {
-          console.log('checkConditions');
           jobModel.getJobs(function(err, result) {
             if (err) return done(err);
             expect(result.length).to.equal(3);
@@ -338,7 +334,6 @@ describe('Jobs', function() {
 
         function lockFirstJob(err) {
           if (err) return done(err);
-          console.log('lockFirstJob');
           lockJob(dbs[1], 1, done);
         }
       });
@@ -359,7 +354,6 @@ describe('Jobs', function() {
         var wasWaiting = false;
 
         jobs.eventEmitter.on('lockSought', function() {
-          console.log('lockSought');
           // Yes, this is hacky.  We assume that the obtaining of the lock
           // will always take < 100ms.  I could mock out the dbs[0], but this would
           // then be less 'realistic'.  Open to suggestions on how to do this
@@ -374,7 +368,6 @@ describe('Jobs', function() {
 
         jobs.eventEmitter.on('lockObtained', function(err) {
           if (err) return done(err);
-          console.log('lockObtained');
           expect(wasWaiting).to.equal(true);
           done();
         });
