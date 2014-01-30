@@ -56,6 +56,8 @@ exports.obtainNextUnlockedJob =
   "WHERE id IN (SELECT id FROM candidate_job where locked) " +
   "RETURNING *";
 
-  exports.obtainLockForJob =
-  "select *, pg_advisory_xact_lock(id) FROM job_snapshots WHERE " +
+exports.obtainLockForJob =
+  "SELECT *, pg_advisory_xact_lock(id) FROM job_snapshots WHERE " +
   "job_id = $1 AND processed IS NULL";
+
+// vim: set et sw=2 ts=2 colorcolumn=80:

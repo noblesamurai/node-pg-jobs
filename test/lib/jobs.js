@@ -86,13 +86,13 @@ describe('Jobs', function() {
       console.log(job);
       if (error() && job.retriesRemaining > 0 ) {
         return jobDone(null, {
-          state: 'pending_retry',
+          state: 'pendingRetry',
           log: 'it failed!, retrying soon',
           retriesRemaining: --job.retriesRemaining
         }, 2);
       } else if (error()) {
         return jobDone(null, {
-          state : 'permanently_failed',
+          state : 'permanentlyFailed',
           log: 'it failed and we are stopping here!',
           retriesRemaining: 0
         }, null);
