@@ -3,15 +3,16 @@ var expect = require('chai').expect,
     sinon = require('sinon'),
     async = require('async'),
     testHelper = require('../helper'),
-    jobs = require('../../lib/jobs'),
     jobModel = require('../../models/jobs');
 
 describe('Jobs', function() {
   var db, db2;
+  var jobs;
   beforeEach(function(done) {
     async.times(2, testHelper.connectToDB, function(err, results) {
       db = results[0];
       db2 = results[1];
+      jobs = require('../../lib/jobs')(db);
       done(err);
     });
   });
@@ -58,7 +59,7 @@ describe('Jobs', function() {
             done();
           });
         };
-        jobs.create(db, {state: 'waiting', date: 'some'}, 100 * 1000, cb);
+        jobs.create({state: 'waiting', date: 'some'}, 100 * 1000, cb);
       });
   });
 
@@ -164,7 +165,7 @@ describe('Jobs', function() {
       });
 
       // Run the test
-      jobs.process(db, jobIterator);
+      jobs.process(jobIterator);
     });
 
     // Just binds test and prep together.
@@ -202,7 +203,7 @@ describe('Jobs', function() {
         });
 
         // Run the test.
-        jobs.process(db, jobIterator);
+        jobs.process(jobIterator);
       });
     });
 
@@ -250,7 +251,7 @@ describe('Jobs', function() {
         });
 
         // Run the test.
-        jobs.process(db, jobIterator);
+        jobs.process(jobIterator);
       });
     });
 
@@ -281,7 +282,7 @@ describe('Jobs', function() {
           });
         });
 
-        jobs.process(db, iterator);
+        jobs.process(iterator);
       });
     });
   });
@@ -322,7 +323,7 @@ describe('Jobs', function() {
         };
 
         // Run the test.
-        jobs.processNow(db2, 1, iterator, checkConditions);
+        jobs.processNow(1, iterator, checkConditions);
       });
     });
 
@@ -381,7 +382,7 @@ describe('Jobs', function() {
         });
 
         // Run the test.
-        jobs.processNow(db, 1, iterator, done);
+        jobs.processNow(1, iterator, done);
       });
     });
   });
