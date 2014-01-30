@@ -48,7 +48,7 @@ describe('Jobs', function() {
       function(done) {
         var now = moment();
         var cb = function() {
-          jobs.getJobs(db, function(err, result) {
+          jobModel.getJobs(db, function(err, result) {
             if (err) return done(err);
 
             expect(result.length).to.equal(1);
@@ -131,7 +131,7 @@ describe('Jobs', function() {
     it('re-schedules a job iff a non-null serviceNextIn property is provided',
           function(done) {
       // Set up jobs data
-      jobs.setJobs(db, [{
+      jobModel.setJobs(db, [{
         data: {
           retriesRemaining: 3
         },
@@ -156,7 +156,7 @@ describe('Jobs', function() {
         // hence not requeue.)
         // I.e. retries remaining for each job + no. jobs initially == 10
         if (jobUpdatedCount == 10) {
-          jobs.getScheduledJobs(db, function(err, result) {
+          jobModel.scheduledJobs(db, function(err, result) {
             expect(result.length, 'length of job queue').
               to.equal(0);
             done();
@@ -172,7 +172,7 @@ describe('Jobs', function() {
     describe('', function() {
       beforeEach(function(done) {
         // Set up some jobs.
-        jobs.setJobs(db, [{
+        jobModel.setJobs(db, [{
           data: {
             retriesRemaining: 1,
             wee: 'wah'
@@ -210,7 +210,7 @@ describe('Jobs', function() {
     // Just binds test and setup together.
     describe('', function() {
       beforeEach(function(done) {
-        jobs.setJobs(db, [{
+        jobModel.setJobs(db, [{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -258,7 +258,7 @@ describe('Jobs', function() {
     //bind setup and test together
     describe('', function() {
       beforeEach(function(done) {
-        jobs.setJobs(db, [{
+        jobModel.setJobs(db, [{
           data: [],
           process_at: moment()
         }], done);
@@ -275,7 +275,7 @@ describe('Jobs', function() {
 
         jobs.eventEmitter.on('processCommitted', function() {
           jobs.stopProcessing();
-          jobs.getJobs(db2, function(err, result) {
+          jobModel.getJobs(db2, function(err, result) {
             if (err) return done(err);
             expect(result).to.have.length(2);
             done();
@@ -290,7 +290,7 @@ describe('Jobs', function() {
     describe('', function() {
       beforeEach(function(done) {
         // Set up some jobs.
-        jobs.setJobs(db2, [{
+        jobModel.setJobs(db2, [{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -314,7 +314,7 @@ describe('Jobs', function() {
         // Set up condition
         var checkConditions =  function() {
           console.log('checkConditions');
-          jobs.getJobs(db2, function(err, result) {
+          jobModel.getJobs(db2, function(err, result) {
             if (err) return done(err);
             expect(result.length).to.equal(3);
             expect(result[2].data).to.have.property('retriesRemaining');
@@ -330,7 +330,7 @@ describe('Jobs', function() {
     describe('', function() {
       beforeEach(function(done) {
         // TODO: lock this job
-        jobs.setJobs(db, [{
+        jobModel.setJobs(db, [{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -352,7 +352,7 @@ describe('Jobs', function() {
         // it ran.
 
         var iterator = function(err, job, cb) {
-          jobs.getJobs(db, function(err, result) {
+          jobModel.getJobs(db, function(err, result) {
             if (err) return done(err);
             return cb(null, job, 200);
           });
@@ -390,7 +390,7 @@ describe('Jobs', function() {
   describe.skip('#getHistory', function() {
     it('gets the requested job history', function(done) {
       // Set up some jobs.
-      jobs.setJobs([{
+      jobModel.setJobs([{
         id: 1,
         jobData: [{
           retriesRemaining: 1
