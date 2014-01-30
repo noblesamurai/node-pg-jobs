@@ -7,29 +7,8 @@ var job_snapshots = sql.define({
     columns: ['id', 'job_id', 'process_at', 'processed', 'data', 'created_at' ]
 });
 
-module.exports = function(dbIn) {
+module.exports = function(db) {
   var JobSnapshotsModel = {};
-  var db = dbIn;
-
-  if (process.env.NODE_ENV === 'test') {
-    JobSnapshotsModel.setJobs = function(newJobs, callback) {
-      db.query('delete from job_snapshots', insertJobs);
-      function insertJobs(err) {
-        console.log('insertJobs');
-        if (err) return callback(err);
-        var query = job_snapshots.insert(newJobs).toQuery();
-        console.log(query);
-        db.query(query, callback);
-      }
-    };
-    JobSnapshotsModel.getJobs = function(callback) {
-      var query = job_snapshots.select(job_snapshots.star()).toQuery();
-      db.query(query, function(err, result) {
-        if (err) return callback(err);
-        callback(null, result.rows);
-      });
-    };
-  }
 
   /**
    * @param {function} callback(err, jobId)
@@ -91,6 +70,39 @@ module.exports = function(dbIn) {
       callback(null, result.rows[0]);
     }
   };
+
+  JobSnapshotsModel.startTxn = function(callback) {
+    console.log('begin txn');
+    db.query('begin', callback);
+  };
+
+  JobSnapshotsModel.commitTxn = function(callback) {
+    db.query('commit', callback);
+  };
+
+  JobSnapshotsModel.rollbackTxn = function(callback) {
+    db.query('rollback', callback);
+  };
+
+  if (process.env.NODE_ENV === 'test') {
+    JobSnapshotsModel.setJobs = function(newJobs, callback) {
+      db.query('delete from job_snapshots', insertJobs);
+      function insertJobs(err) {
+        console.log('insertJobs');
+        if (err) return callback(err);
+        var query = job_snapshots.insert(newJobs).toQuery();
+        console.log(query);
+        db.query(query, callback);
+      }
+    };
+    JobSnapshotsModel.getJobs = function(callback) {
+      var query = job_snapshots.select(job_snapshots.star()).toQuery();
+      db.query(query, function(err, result) {
+        if (err) return callback(err);
+        callback(null, result.rows);
+      });
+    };
+  }
 
   return JobSnapshotsModel;
 };
