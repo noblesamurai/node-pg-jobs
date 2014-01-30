@@ -7,8 +7,7 @@ exports.connectToDB = function(number, callback) {
 
   var db = new pg.Client(process.env.DATABASE_URL);
   db.connect(function(err) {
-    if(err) return callback(err);
-    callback(null, db);
+    callback(err, db);
   });
 };
 

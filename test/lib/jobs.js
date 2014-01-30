@@ -2,28 +2,27 @@ var expect = require('chai').expect,
     moment = require('moment'),
     sinon = require('sinon'),
     async = require('async'),
+    _ = require('lodash'),
     testHelper = require('../helper'),
     jobModel = require('../../models/jobs');
 
 describe('Jobs', function() {
-  var db, db2;
+  var dbs = [];
   var jobs;
   beforeEach(function(done) {
     async.times(2, testHelper.connectToDB, function(err, results) {
-      db = results[0];
-      db2 = results[1];
-      jobs = require('../../lib/jobs')(db);
+      dbs = results;
+      jobs = require('../../lib/jobs')(dbs[0]);
       done(err);
     });
   });
 
   afterEach(function() {
-    db.end();
-    db2.end();
+    _.invoke(dbs, 'end');
   });
 
   function lockJob(db, jobId, callback) {
-    db2.query('begin', doLocks);
+    db.query('begin', doLocks);
     function doLocks(err, result) {
       if (err) return done(err);
       // Note: In this test we use the job_snapshot id not the job_id as
@@ -33,14 +32,14 @@ describe('Jobs', function() {
       // probably would be fine to lock on the job_id, but it is not
       // necessary as we should only ever have one snapshot of a given job
       // that is up for processing...
-      db2.query('select pg_try_advisory_xact_lock(id) from job_snapshots ' +
+      db.query('select pg_try_advisory_xact_lock(id) from job_snapshots ' +
           'where job_id = $1 and processed IS NULL', [jobId], callback);
     }
   }
 
   describe('#create', function() {
     beforeEach(function(done) {
-      db2.query('delete from job_snapshots', done);
+      dbs[1].query('delete from job_snapshots', done);
     });
 
     it('creates a job with given initial state, time ' +
@@ -48,7 +47,7 @@ describe('Jobs', function() {
       function(done) {
         var now = moment();
         var cb = function() {
-          jobModel.getJobs(db, function(err, result) {
+          jobModel.getJobs(dbs[0], function(err, result) {
             if (err) return done(err);
 
             expect(result.length).to.equal(1);
@@ -131,7 +130,7 @@ describe('Jobs', function() {
     it('re-schedules a job iff a non-null serviceNextIn property is provided',
           function(done) {
       // Set up jobs data
-      jobModel.setJobs(db, [{
+      jobModel.setJobs(dbs[0], [{
         data: {
           retriesRemaining: 3
         },
@@ -156,7 +155,7 @@ describe('Jobs', function() {
         // hence not requeue.)
         // I.e. retries remaining for each job + no. jobs initially == 10
         if (jobUpdatedCount == 10) {
-          jobModel.scheduledJobs(db, function(err, result) {
+          jobModel.scheduledJobs(dbs[0], function(err, result) {
             expect(result.length, 'length of job queue').
               to.equal(0);
             done();
@@ -172,7 +171,7 @@ describe('Jobs', function() {
     describe('', function() {
       beforeEach(function(done) {
         // Set up some jobs.
-        jobModel.setJobs(db, [{
+        jobModel.setJobs(dbs[0], [{
           data: {
             retriesRemaining: 1,
             wee: 'wah'
@@ -210,7 +209,7 @@ describe('Jobs', function() {
     // Just binds test and setup together.
     describe('', function() {
       beforeEach(function(done) {
-        jobModel.setJobs(db, [{
+        jobModel.setJobs(dbs[0], [{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -229,7 +228,7 @@ describe('Jobs', function() {
         }], lockFirstJob);
 
         function lockFirstJob() {
-          lockJob(db2, 1, done);
+          lockJob(dbs[1], 1, done);
         }
       });
 
@@ -258,7 +257,7 @@ describe('Jobs', function() {
     //bind setup and test together
     describe('', function() {
       beforeEach(function(done) {
-        jobModel.setJobs(db, [{
+        jobModel.setJobs(dbs[0], [{
           data: [],
           process_at: moment()
         }], done);
@@ -275,7 +274,7 @@ describe('Jobs', function() {
 
         jobs.eventEmitter.on('processCommitted', function() {
           jobs.stopProcessing();
-          jobModel.getJobs(db2, function(err, result) {
+          jobModel.getJobs(dbs[1], function(err, result) {
             if (err) return done(err);
             expect(result).to.have.length(2);
             done();
@@ -290,7 +289,7 @@ describe('Jobs', function() {
     describe('', function() {
       beforeEach(function(done) {
         // Set up some jobs.
-        jobModel.setJobs(db2, [{
+        jobModel.setJobs(dbs[1], [{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -314,7 +313,7 @@ describe('Jobs', function() {
         // Set up condition
         var checkConditions =  function() {
           console.log('checkConditions');
-          jobModel.getJobs(db2, function(err, result) {
+          jobModel.getJobs(dbs[1], function(err, result) {
             if (err) return done(err);
             expect(result.length).to.equal(3);
             expect(result[2].data).to.have.property('retriesRemaining');
@@ -330,7 +329,7 @@ describe('Jobs', function() {
     describe('', function() {
       beforeEach(function(done) {
         // TODO: lock this job
-        jobModel.setJobs(db, [{
+        jobModel.setJobs(dbs[0], [{
           job_id: 1,
           data: {
             retriesRemaining: 1
@@ -341,7 +340,7 @@ describe('Jobs', function() {
         function lockFirstJob(err) {
           if (err) return done(err);
           console.log('lockFirstJob');
-          lockJob(db2, 1, done);
+          lockJob(dbs[1], 1, done);
         }
       });
 
@@ -352,7 +351,7 @@ describe('Jobs', function() {
         // it ran.
 
         var iterator = function(err, job, cb) {
-          jobModel.getJobs(db, function(err, result) {
+          jobModel.getJobs(dbs[0], function(err, result) {
             if (err) return done(err);
             return cb(null, job, 200);
           });
@@ -363,7 +362,7 @@ describe('Jobs', function() {
         jobs.eventEmitter.on('lockSought', function() {
           console.log('lockSought');
           // Yes, this is hacky.  We assume that the obtaining of the lock
-          // will always take < 100ms.  I could mock out the DB, but this would
+          // will always take < 100ms.  I could mock out the dbs[0], but this would
           // then be less 'realistic'.  Open to suggestions on how to do this
           // better!
           setTimeout(shouldBeWaiting, 100);
@@ -371,7 +370,7 @@ describe('Jobs', function() {
 
         function shouldBeWaiting() {
           wasWaiting = true;
-          db2.query('commit');
+          dbs[1].query('commit');
         }
 
         jobs.eventEmitter.on('lockObtained', function(err) {
