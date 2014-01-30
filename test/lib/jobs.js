@@ -168,7 +168,7 @@ describe('Jobs', function() {
     });
 
     // Just binds test and prep together.
-    describe('', function() {
+    describe('with a delayed job', function() {
       beforeEach(function(done) {
         // Set up some jobs.
         jobModel.setJobs(dbs[0], [{
@@ -186,7 +186,7 @@ describe('Jobs', function() {
         }], done);
       });
 
-      it('provides service to a job iff correct number of ms have elapsed.',
+      it('provides service only when correct number of ms have elapsed.',
           function(done) {
         // Set up our condition.
         jobs.eventEmitter.on('maybeServiceJob', function() {
@@ -207,7 +207,7 @@ describe('Jobs', function() {
     });
 
     // Just binds test and setup together.
-    describe('', function() {
+    describe('with a locked job', function() {
       beforeEach(function(done) {
         jobModel.setJobs(dbs[0], [{
           job_id: 1,
@@ -232,7 +232,7 @@ describe('Jobs', function() {
         }
       });
 
-      it('provides service to a job iff job is not locked.',
+      it('will not service it.',
           function(done) {
 
         // Set up our condition.
@@ -255,7 +255,7 @@ describe('Jobs', function() {
     });
 
     //bind setup and test together
-    describe('', function() {
+    describe('when called on a job', function() {
       beforeEach(function(done) {
         jobModel.setJobs(dbs[0], [{
           data: [],
@@ -263,7 +263,7 @@ describe('Jobs', function() {
         }], done);
       });
 
-      it('saves the newJobData in a job, appending it to the history of job data',
+      it('saves the new job data given to the db, in a non-destructive way',
           function(done) {
         var iterator = function(id, job, cb) {
           return cb(null, {
@@ -286,7 +286,7 @@ describe('Jobs', function() {
     });
   });
   describe('#processNow', function() {
-    describe('', function() {
+    describe('when called on a not locked job', function() {
       beforeEach(function(done) {
         // Set up some jobs.
         jobModel.setJobs(dbs[1], [{
@@ -326,9 +326,8 @@ describe('Jobs', function() {
       });
     });
 
-    describe('', function() {
+    describe('when called on a locked job', function() {
       beforeEach(function(done) {
-        // TODO: lock this job
         jobModel.setJobs(dbs[0], [{
           job_id: 1,
           data: {
@@ -344,7 +343,7 @@ describe('Jobs', function() {
         }
       });
 
-      it('waits until the lock is ceeded if process() has got hold of the job',
+      it('waits until the lock is ceeded',
           function(done) {
         // We first obtain a lock on the job. Then we run processNow().
         // It should be waiting.  We then release our lock.  We then see that
