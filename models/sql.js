@@ -51,7 +51,10 @@ exports.obtainNextUnlockedJob =
   // them all and couldn't lock one, in which case we'll be left with the last
   // one we couldn't. (Hence the "where locked" so we get an empty result set
   // in that case).
-  "SELECT * FROM candidate_job where locked";
+  "UPDATE job_snapshots " +
+  "SET processed = NOW() " +
+  "WHERE id IN (SELECT id FROM candidate_job where locked) " +
+  "RETURNING *";
 
   exports.obtainLockForJob =
   "select *, pg_advisory_xact_lock(id) FROM job_snapshots WHERE " +

@@ -74,21 +74,7 @@ exports.nextToProcess = function(db, callback) {
 
   function returnResult(err, result) {
     if(err) return callback(err);
-    updateProcessedTime(result.rows[0], function(err) {
-      if (err) return callback(err);
-      callback(null, result.rows[0]);
-    });
-  }
-
-  function updateProcessedTime(row, cb) {
-    if (row === undefined) {
-      return cb();
-    }
-    var sql = job_snapshots.
-      update({processed: moment().toISOString()}).
-      where(job_snapshots.id.equals(row.id)).toQuery();
-    console.log(sql.toString());
-    db.query(sql, cb);
+    callback(null, result.rows[0]);
   }
 };
 
