@@ -1,15 +1,15 @@
 var sql = require('sql'),
-    moment = require('moment');
+    moment = require('moment'),
+    sqlQueries = require('./sql');
+
 var job_snapshots = sql.define({
     name: 'job_snapshots',
     columns: ['id', 'job_id', 'process_at', 'processed', 'data', 'created_at' ]
 });
 
-var sqlQueries = require('./sql');
-
 if (process.env.NODE_ENV === 'test') {
   exports.setJobs = function(db, newJobs, callback) {
-    db.query('delete from job_snapshots;', insertJobs);
+    db.query('delete from job_snapshots', insertJobs);
     function insertJobs(err) {
       console.log('insertJobs');
       if (err) return callback(err);
@@ -55,8 +55,11 @@ exports.readLatest = function(db, jobId) {};
 exports.readHistory = function(db, jobId) {};
 
 exports.scheduledJobs = function(db, callback) {
-  db.query(job_snapshots.select(job_snapshots.star()).from(job_snapshots).
-    where(job_snapshots.process_at.isNotNull()).and(job_snapshots.processed.isNull()), gotResult);
+  db.query(job_snapshots.
+      select(job_snapshots.star()).
+      from(job_snapshots).
+      where(job_snapshots.process_at.isNotNull()).
+        and(job_snapshots.processed.isNull()), gotResult);
   function gotResult(err, result) {
     if (err) return callback(err);
     callback(null, result.rows);
@@ -81,8 +84,9 @@ exports.nextToProcess = function(db, callback) {
     if (row === undefined) {
       return cb();
     }
-    var sql = job_snapshots.update({processed: moment().toISOString()}).where(
-          job_snapshots.id.equals(row.id)).toQuery();
+    var sql = job_snapshots.
+      update({processed: moment().toISOString()}).
+      where(job_snapshots.id.equals(row.id)).toQuery();
     console.log(sql.toString());
     db.query(sql, cb);
   }
