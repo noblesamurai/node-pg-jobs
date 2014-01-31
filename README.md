@@ -107,3 +107,12 @@ var callback = function(err, jobHistory) {
 
 jobs.getHistory(id, callback);
 ```
+# Running migrations on heroku
+This is a bit yuk, but it should work:
+```
+heroku run bash
+npm install -g db-migrate
+npm install db-migrate
+db-migrate up -m node_modules/node-pg-jobs/migrations/ --config $DATABASE_URL
+exit
+```
