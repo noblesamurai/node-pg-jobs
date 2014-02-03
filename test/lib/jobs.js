@@ -176,8 +176,7 @@ describe('Jobs', function() {
       }]);
 
       var iterator = function(id, job, cb) {
-        var MS_PER_DAY = 24 * 60 * 60 * 1000;
-        cb(null, {}, 10 * MS_PER_DAY);
+        cb(null, {}, moment.duration(10, 'days').asMilliseconds());
       };
 
       // Set up our condition
