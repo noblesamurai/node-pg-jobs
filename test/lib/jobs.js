@@ -10,15 +10,18 @@ describe('Jobs', function() {
   var jobs;
   beforeEach(function(done) {
     async.times(2, testHelper.connectToDB, function(err, results) {
+      if (err) return done(err);
       dbs = results;
       jobs = require('../../lib/jobs')(dbs[0]);
       jobModel = require('../../models/jobs')(dbs[1]);
-      done(err);
+      done();
     });
   });
 
   afterEach(function() {
-    _.invoke(dbs, 'end');
+    // Apparently this should not be called:
+    // https://github.com/brianc/node-postgres/wiki/Client#wiki-method-end
+    // _.invoke(dbs, 'end');
   });
 
   function lockJob(db, jobId, callback) {
@@ -145,7 +148,7 @@ describe('Jobs', function() {
       }]);
 
       // Set up our condition
-      jobs.eventEmitter.on('jobUpdated', function() {
+      jobs.eventEmitter.on('processCommitted', function() {
         // Should need 10 iterations for all jobs to retried out of existence.
         // Each job will be provided service until no retries remaining, then
         // once more to figure out that we need to permanently fail it (and
@@ -153,8 +156,7 @@ describe('Jobs', function() {
         // I.e. retries remaining for each job + no. jobs initially == 10
         if (jobUpdatedCount == 10) {
           jobModel.scheduledJobs(function(err, result) {
-            expect(result.length, 'length of job queue').
-              to.equal(0);
+            expect(result.length, 'length of job queue').to.equal(0);
             done();
           });
         }
@@ -162,6 +164,38 @@ describe('Jobs', function() {
 
       // Run the test
       jobs.process(jobIterator);
+    });
+
+    it('reschedules a job to have the correct execution time', function(done) {
+      // Set up jobs data
+      jobModel.setJobs([{
+        data: {
+          retriesRemaining: 3
+        },
+        process_at: moment().toDate()
+      }]);
+
+      var iterator = function(id, job, cb) {
+        var MS_PER_DAY = 24 * 60 * 60 * 1000;
+        cb(null, {}, 10 * MS_PER_DAY);
+      };
+
+      // Set up our condition
+      jobs.eventEmitter.on('processCommitted', function() {
+          jobs.stopProcessing();
+          jobModel.scheduledJobs(function(err, result) {
+            if (err) return done(err);
+            expect(result.length, 'length of job queue').to.equal(1);
+            // Expect the process_at time to be in 10 days.
+            // Add 5 minutes to allow for processing lag.
+            expect(moment(result[0].process_at).add(5, 'minutes').
+              diff(moment(), 'days')).to.equal(10);
+            done();
+          });
+        });
+
+      // Run the test
+      jobs.process(iterator);
     });
 
     // Just binds test and prep together.
@@ -367,9 +401,9 @@ describe('Jobs', function() {
         }
 
         jobs.eventEmitter.on('lockObtained', function(err) {
+          jobs.stopProcessing();
           if (err) return done(err);
           expect(wasWaiting).to.equal(true);
-          done();
         });
 
         // Run the test.

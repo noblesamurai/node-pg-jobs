@@ -38,11 +38,12 @@ module.exports = function(db) {
   JobSnapshotsModel.readHistory = function(jobId) {};
 
   JobSnapshotsModel.scheduledJobs = function(callback) {
-    db.query(job_snapshots.
+    var query = job_snapshots.
         select(job_snapshots.star()).
         from(job_snapshots).
         where(job_snapshots.process_at.isNotNull()).
-          and(job_snapshots.processed.isNull()), gotResult);
+          and(job_snapshots.processed.isNull()).toQuery();
+    db.query(query, gotResult);
     function gotResult(err, result) {
       if (err) return callback(err);
       callback(null, result.rows);
