@@ -10,15 +10,18 @@ describe('Jobs', function() {
   var jobs;
   beforeEach(function(done) {
     async.times(2, testHelper.connectToDB, function(err, results) {
+      if (err) return done(err);
       dbs = results;
       jobs = require('../../lib/jobs')(dbs[0]);
       jobModel = require('../../models/jobs')(dbs[1]);
-      done(err);
+      done();
     });
   });
 
   afterEach(function() {
-    _.invoke(dbs, 'end');
+    // Apparently this should not be called:
+    // https://github.com/brianc/node-postgres/wiki/Client#wiki-method-end
+    // _.invoke(dbs, 'end');
   });
 
   function lockJob(db, jobId, callback) {
@@ -145,7 +148,7 @@ describe('Jobs', function() {
       }]);
 
       // Set up our condition
-      jobs.eventEmitter.on('jobUpdated', function() {
+      jobs.eventEmitter.on('processCommitted', function() {
         // Should need 10 iterations for all jobs to retried out of existence.
         // Each job will be provided service until no retries remaining, then
         // once more to figure out that we need to permanently fail it (and
@@ -398,9 +401,9 @@ describe('Jobs', function() {
         }
 
         jobs.eventEmitter.on('lockObtained', function(err) {
+          jobs.stopProcessing();
           if (err) return done(err);
           expect(wasWaiting).to.equal(true);
-          done();
         });
 
         // Run the test.
