@@ -73,12 +73,10 @@ module.exports = function(db) {
   };
 
   JobSnapshotsModel.startTxn = function(callback) {
-    console.log('begin txn');
     db.query('begin', callback);
   };
 
   JobSnapshotsModel.commitTxn = function(callback) {
-    console.log('commit txn');
     db.query('commit', callback);
   };
 
