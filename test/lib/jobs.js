@@ -288,6 +288,7 @@ describe('Jobs', function() {
     describe('when called on a job', function() {
       beforeEach(function(done) {
         jobModel.setJobs([{
+          job_id: 123,
           data: [],
           process_at: moment()
         }], done);
@@ -311,6 +312,22 @@ describe('Jobs', function() {
           });
         });
 
+        jobs.process(iterator);
+      });
+      it('provides the job id to the iterator', function(done) {
+        var iterator = function(id, job, cb) {
+          try {
+            jobs.stopProcessing();
+            expect(id).to.equal(123);
+            dbs[0].query('commit', done);
+          } catch (err) {
+            var error = err;
+            dbs[0].query('commit', complete);
+            function complete() {
+              done(error);
+            }
+          }
+        };
         jobs.process(iterator);
       });
     });
