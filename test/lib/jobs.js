@@ -337,6 +337,8 @@ describe('Jobs', function() {
       it('immediately runs the callback on the requested job, updating it',
           function(done) {
         var iterator = function(err, job, cb) {
+          expect(job).to.have.property('retriesRemaining', 1);
+          job.retriesRemaining = 2;
           return cb(null, job, 200);
         };
 
@@ -345,7 +347,7 @@ describe('Jobs', function() {
           jobModel.getJobs(function(err, result) {
             if (err) return done(err);
             expect(result.length).to.equal(3);
-            expect(result[2].data).to.have.property('retriesRemaining');
+            expect(result[2].data).to.have.property('retriesRemaining', 2);
             done();
           });
         };
