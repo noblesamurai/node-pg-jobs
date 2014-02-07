@@ -30,12 +30,12 @@
     "grunt": "~0.4.2",
     "grunt-contrib-jshint": "~0.8.0",
     "mocha-unfunk-reporter": "~0.4.0",
+    "sinon": "~1.7.3",
     "chai": "~1.8.1"
   },
   "dependencies": {
     "async": "~0.2.9",
     "moment": "~2.5.0",
-    "sinon": "~1.7.3",
     "lodash": "~2.4.1",
     "pg": "~2.11.1",
     "sql": "~0.35.0"
