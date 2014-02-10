@@ -24,12 +24,7 @@ module.exports = function(db) {
       newJob.job_id = jobId;
     }
 
-    console.log('newJob');
-    console.log(newJob);
-
     var sql = job_snapshots.insert([newJob]).toQuery();
-    console.log(sql);
-
     db.query(sql, callback);
   };
 
@@ -63,7 +58,6 @@ module.exports = function(db) {
   };
 
   JobSnapshotsModel.obtainLock = function(jobId, callback) {
-    console.log('obtainLock() for job id ' + jobId);
     db.query(sqlQueries.obtainLockForJob, [jobId], gotResult);
 
     function gotResult(err, result) {
@@ -81,7 +75,6 @@ module.exports = function(db) {
   };
 
   JobSnapshotsModel.rollbackTxn = function(callback) {
-    console.log('rollback txn');
     db.query('rollback', callback);
   };
 
@@ -89,10 +82,8 @@ module.exports = function(db) {
     JobSnapshotsModel.setJobs = function(newJobs, callback) {
       db.query('delete from job_snapshots', insertJobs);
       function insertJobs(err) {
-        console.log('insertJobs');
         if (err) return callback(err);
         var query = job_snapshots.insert(newJobs).toQuery();
-        console.log(query);
         db.query(query, callback);
       }
     };
