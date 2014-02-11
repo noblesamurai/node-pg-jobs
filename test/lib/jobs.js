@@ -365,6 +365,8 @@ describe('Jobs', function() {
             if (err) return done(err);
             expect(result.length).to.equal(3);
             expect(result[2].data).to.have.property('retriesRemaining', 2);
+            // Prev snapshot should now have a processed time.
+            expect(result[0].processed).to.not.equal(null);
             done();
           });
         };
