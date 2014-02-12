@@ -88,7 +88,7 @@ module.exports = function(db) {
       }
     };
     JobSnapshotsModel.getJobs = function(callback) {
-      var query = job_snapshots.select(job_snapshots.star()).order(job_snapshots.id).toQuery();
+      var query = job_snapshots.select(job_snapshots.star()).toQuery();
       db.query(query, function(err, result) {
         if (err) return callback(err);
         callback(null, result.rows);
