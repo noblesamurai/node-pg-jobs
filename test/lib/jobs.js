@@ -363,8 +363,21 @@ describe('Jobs', function() {
         var checkConditions =  function() {
           jobModel.getJobs(function(err, result) {
             if (err) return done(err);
-            expect(result.length).to.equal(3);
-            expect(result[2].data).to.have.property('retriesRemaining', 2);
+
+            // check snapshots for job 1
+            var snapshots = _.filter(result, {job_id: 1});
+
+            expect(snapshots).to.have.length(2);
+
+            // There should be a single snapshot with a processed value (the
+            // previously existing one).
+            expect(_.reject(snapshots, {processed: null}).length).to.equal(1);
+
+            // There should be a single snapshot entry with 2 retries remaining
+            // and it should not have a processed value.
+            expect(_.filter(snapshots,
+                {processed: null, data: {'retriesRemaining': 2}}).length).
+                to.equal(1);
             done();
           });
         };
