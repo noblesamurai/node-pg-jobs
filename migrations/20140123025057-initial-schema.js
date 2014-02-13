@@ -10,7 +10,7 @@ exports.up = function(db, callback) {
         "process_at    timestamp with time zone," +
         "processed     timestamp with time zone," +
         "data          json," +
-        "created_at    timestamp NOT NULL DEFAULT now()" +
+        "created_at    timestamp with time zone NOT NULL DEFAULT now()" +
     ");" +
     "ALTER SEQUENCE job_snapshots_job_id_seq OWNED BY job_snapshots.job_id;";
 
