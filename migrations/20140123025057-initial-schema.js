@@ -12,7 +12,8 @@ exports.up = function(db, callback) {
         "data          json," +
         "created_at    timestamp with time zone NOT NULL DEFAULT now()" +
     ");" +
-    "ALTER SEQUENCE job_snapshots_job_id_seq OWNED BY job_snapshots.job_id;";
+    "ALTER SEQUENCE job_snapshots_job_id_seq OWNED BY job_snapshots.job_id;" +
+    "CREATE INDEX job_id_idx ON job_snapshots(job_id);";
 
   db.runSql(sql, callback);
 
