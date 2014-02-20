@@ -54,7 +54,7 @@ describe('jobs model', function() {
       checkConditions);
 
       function runTest(callback) {
-        jobsModel.write(null, new Date(), {one: 1}, callback);
+        jobsModel.write(null, 0, {one: 1}, callback);
       }
 
       function checkConditions (err, results) {
@@ -78,7 +78,7 @@ describe('jobs model', function() {
       checkConditions);
 
       function runTest(callback) {
-        jobsModel.write(0, new Date(), {one: 1}, callback);
+        jobsModel.write(0, 0, {one: 1}, callback);
       }
 
       function checkConditions (err, results) {
