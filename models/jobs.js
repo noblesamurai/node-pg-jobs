@@ -11,21 +11,23 @@ module.exports = function(db) {
   var JobSnapshotsModel = {};
 
   /**
+   * @param {int|null} jobId The ID  of the job to add a job snapshot to.
+   *                         If null, then this is a new job and a fresh job ID
+   *                         is assigned by the sequence on the database.
+   * @param {int} processIn Number of milliseconds from now the job should
+   *                        become eligible to obtain service.
+   * @param {Object} data The job data.
    * @param {function} callback(err, jobId)
    */
-  JobSnapshotsModel.write = function(jobId, processNext, data, callback) {
-    var newJob = {
-        process_at: processNext ? processNext.toISOString() : null,
-        data: data
-      };
-
-    // We let the DB assign the ID if it is null
-    if(jobId !== null) {
-      newJob.job_id = jobId;
-    }
-
-    var sql = job_snapshots.insert([newJob]).toQuery();
-    db.query(sql, callback);
+  JobSnapshotsModel.write = function(jobId, processIn, data, callback) {
+    var processAt = (processIn === null) ?
+        null :
+        // parseInt for injection attack prevention.
+        "NOW() + INTERVAL '" + parseInt(processIn, 10) + " milliseconds'";
+    var sql =
+      "INSERT INTO job_snapshots (job_id, data, process_at) values ($1, $2, " +
+      processAt + ");";
+    db.query(sql, [jobId, data], callback);
   };
 
   JobSnapshotsModel.readLatest = function(jobId) {};
