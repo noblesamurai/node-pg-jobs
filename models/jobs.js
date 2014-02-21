@@ -22,7 +22,8 @@ module.exports = function(db) {
   JobSnapshotsModel.write = function(jobId, processIn, data, callback) {
     var processAt = (processIn === null) ?
         null :
-        "NOW() + INTERVAL '" + processIn + " milliseconds'";
+        // parseInt for injection attack prevention.
+        "NOW() + INTERVAL '" + parseInt(processIn, 10) + " milliseconds'";
     var sql =
       "INSERT INTO job_snapshots (job_id, data, process_at) values ($1, $2, " +
       processAt + ");";
