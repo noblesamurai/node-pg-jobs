@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "grunt test"
+    "test": "DATABASE_URL=postgres://localhost/node_pg_jobs_test NODE_ENV=test mocha --recursive ./test"
   },
   "repository": {
     "type": "git",
@@ -31,7 +31,9 @@
     "grunt-contrib-jshint": "~0.8.0",
     "mocha-unfunk-reporter": "~0.4.0",
     "sinon": "~1.7.3",
-    "chai": "~1.8.1"
+    "chai": "~1.8.1",
+    "mocha": "~1.17.1",
+    "db-migrate": "~0.6.4"
   },
   "dependencies": {
     "async": "~0.2.9",
