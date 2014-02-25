@@ -24,10 +24,18 @@ module.exports = function(db) {
         null :
         // parseInt for injection attack prevention.
         "NOW() + INTERVAL '" + parseInt(processIn, 10) + " milliseconds'";
-    var sql =
-      "INSERT INTO job_snapshots (job_id, data, process_at) values ($1, $2, " +
-      processAt + ");";
-    db.query(sql, [jobId, data], callback);
+    var sql;
+    if (jobId !== null) {
+      sql =
+        "INSERT INTO job_snapshots (job_id, data, process_at) VALUES ($1, $2, " +
+        processAt + ");";
+      db.query(sql, [jobId, data], callback);
+    } else {
+      sql =
+        "INSERT INTO job_snapshots (data, process_at) VALUES ($1, " +
+        processAt + ");";
+      db.query(sql, [data], callback);
+    }
   };
 
   JobSnapshotsModel.readLatest = function(jobId) {};

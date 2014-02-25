@@ -19,7 +19,7 @@ exports.obtainNextUnlockedJob =
     "FROM ( " +
       "SELECT j " +
       "FROM job_snapshots AS j " +
-      "WHERE process_at <= now() AND processed IS NULL " +
+      "WHERE process_at IS NOT NULL AND process_at <= now() AND processed IS NULL " +
       "ORDER BY process_at, id " +
       "LIMIT 1 " +
     ") AS t1 " +
@@ -32,7 +32,7 @@ exports.obtainNextUnlockedJob =
         "SELECT ( " +
           "SELECT j " +
           "FROM job_snapshots AS j " +
-          "WHERE process_at <= now() AND processed IS NULL " +
+          "WHERE process_at IS NOT NULL AND process_at <= now() AND processed IS NULL " +
           // Get the next one in line after the one we tried to lock.
           "AND (process_at, id) > (candidate_job.process_at, candidate_job.id) " +
           "ORDER BY process_at, id " +
