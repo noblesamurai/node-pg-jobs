@@ -55,6 +55,11 @@ jobs.process(callback);
  */
 jobs.stopProcessing();
 ```
+Note that at present jobs.process() is synchronous (processes one job after the
+other) but you can safely run two calls to it either in the same or different
+processes. It wouldn't be too hard to change this, let me know if you really
+think this is necessary or put up a pull request.
+
 ## Make it happen now
 
 If you want a job to get service right away (due to say, some external event occurring), you can
