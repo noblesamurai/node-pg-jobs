@@ -1,7 +1,7 @@
 {
   "name": "node-pg-jobs",
-  "version": "0.0.10",
-  "description": "A simple yet powerful postgres backed job queue for node.js with state machine like operation.",
+  "version": "1.0.0",
+  "description": "A simple yet powerful postgres backed job queue for node.js.",
   "main": "index.js",
   "directories": {
     "test": "test"
