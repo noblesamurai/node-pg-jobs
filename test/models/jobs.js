@@ -1,7 +1,8 @@
 var sql = require('sql'),
     async = require('async'),
     expect = require('chai').expect,
-    testHelper = require('../helper');
+    testHelper = require('../helper'),
+    jobsModelTest = require('../../models/jobs_test');
 
 var dbConnections = [];
 
@@ -117,7 +118,7 @@ describe('jobs model', function() {
         data: {two: "two"}
       }];
 
-      jobsModel.setJobs(db, newJobs, done);
+      jobsModelTest.setJobs(db, newJobs, done);
     });
 
     it('gets the next job we should process', function(done) {
