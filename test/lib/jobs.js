@@ -12,7 +12,7 @@ describe('Jobs', function() {
     async.times(2, testHelper.connectToDB, function(err, results) {
       if (err) return done(err);
       dbs = results;
-      jobs = require('../../lib/jobs')(dbs[0]);
+      jobs = require('../../lib/jobs')(process.env.DATABASE_URL);
       jobModel = require('../../models/jobs');
       done();
     });
@@ -88,7 +88,7 @@ describe('Jobs', function() {
           state: 'pendingRetry',
           log: 'it failed!, retrying soon',
           retriesRemaining: --job.retriesRemaining
-        }, 2);
+        }, 0);
       } else if (error()) {
         return jobDone(null, {
           state : 'permanentlyFailed',
@@ -157,9 +157,12 @@ describe('Jobs', function() {
         if (jobUpdatedCount == 10) {
           jobModel.scheduledJobs(dbs[1], function(err, result) {
             expect(result.length, 'length of job queue').to.equal(0);
-            done();
           });
         }
+      });
+      jobs.eventEmitter.on('drain', function() {
+        jobs.stopProcessing();
+        done();
       });
 
       // Run the test
@@ -181,22 +184,25 @@ describe('Jobs', function() {
 
       // Set up our condition
       jobs.eventEmitter.on('processCommitted', function() {
-          jobs.stopProcessing();
-          jobModel.scheduledJobs(dbs[1], function(err, result) {
-            if (err) return done(err);
-            expect(result.length, 'length of job queue').to.equal(1);
-            // Expect the process_at time to be in 10 days.
-            // Add 5 minutes to allow for processing lag.
-            expect(moment(result[0].process_at).add(5, 'minutes').
-              // We use hours not days, as moment.js assumes
-              // you want to keep the hour same when adding a unit of days
-              // across daylight savings boundaries. This means the test will
-              // still pass (as it should) if the test is run within ten
-              // days off going off daylight savings time.
-              diff(moment(), 'hours')).to.equal(10 * 24);
-            done();
-          });
+        jobModel.scheduledJobs(dbs[1], function(err, result) {
+          if (err) return done(err);
+          expect(result.length, 'length of job queue').to.equal(1);
+          // Expect the process_at time to be in 10 days.
+          // Add 5 minutes to allow for processing lag.
+          expect(moment(result[0].process_at).add(5, 'minutes').
+            // We use hours not days, as moment.js assumes
+            // you want to keep the hour same when adding a unit of days
+            // across daylight savings boundaries. This means the test will
+            // still pass (as it should) if the test is run within ten
+            // days off going off daylight savings time.
+            diff(moment(), 'hours')).to.equal(10 * 24);
         });
+      });
+
+      jobs.eventEmitter.on('drain', function() {
+        jobs.stopProcessing();
+        done();
+      });
 
       // Run the test
       jobs.process(iterator);
@@ -224,16 +230,13 @@ describe('Jobs', function() {
       it('provides service only when correct number of ms have elapsed.',
           function(done) {
         // Set up our condition.
-        jobs.eventEmitter.on('maybeServiceJob', function() {
-          // The condition below should hold by 10 attempts to process jobs...
-          if (maybeServiceJobCount == 10) {
+        jobs.eventEmitter.on('drain', function() {
             // Only the first job should have got service, and only twice as it
             // only had one retry remaining.
             expect(jobUpdatedCount, 'number of times we serviced a job').
               to.equal(2);
-
-            done();
-          }
+          jobs.stopProcessing();
+          done();
         });
 
         // Run the test.
@@ -267,24 +270,18 @@ describe('Jobs', function() {
         }
       });
 
-      it('will not service it.',
-          function(done) {
-
-        // Set up our condition.
-        jobs.eventEmitter.on('maybeServiceJob', function() {
-          // The condition below should hold by 10 attempts to process jobs...
-          if (maybeServiceJobCount == 10) {
-            // Only the second job should have got service, six times.
-            // This test also shows starvation does not occur, as the first
-            // job should be considered for service first (but is locked).
-            // Correct behaviour is to move on to the second.
-            expect(jobUpdatedCount, 'number of times we serviced a job').
-              to.equal(6);
-            done();
-          }
+      it('will not service it.', function(done) {
+        jobs.eventEmitter.on('drain', function() {
+          // Only the second job should have got service, six times.
+          // This test also shows starvation does not occur, as the first
+          // job should be considered for service first (but is locked).
+          // Correct behaviour is to move on to the second.
+          expect(jobUpdatedCount, 'number of times we serviced a job').
+            to.equal(6);
+          jobs.stopProcessing();
+          done();
         });
 
-        // Run the test.
         jobs.process(jobIterator);
       });
     });
@@ -309,30 +306,27 @@ describe('Jobs', function() {
         };
 
         jobs.eventEmitter.on('processCommitted', function() {
-          jobs.stopProcessing();
           jobModel.getJobs(dbs[1], function(err, result) {
             if (err) return done(err);
             expect(result).to.have.length(2);
-            done();
           });
+        });
+
+        jobs.eventEmitter.on('drain', function() {
+          jobs.stopProcessing();
+          done();
         });
 
         jobs.process(iterator);
       });
+
       it('provides the job id to the iterator', function(done) {
-        var iterator = function(id, job, cb) {
-          try {
-            jobs.stopProcessing();
+        function iterator(id, job, cb) {
             expect(id).to.equal(123);
-            dbs[0].query('commit', done);
-          } catch (err) {
-            var error = err;
-            dbs[0].query('commit', complete);
-            function complete() {
-              done(error);
-            }
-          }
-        };
+            jobs.stopProcessing();
+            cb(null, {}, null);
+        }
+        jobs.eventEmitter.on('stopProcess', done);
         jobs.process(iterator);
       });
     });
@@ -445,38 +439,6 @@ describe('Jobs', function() {
         // Run the test.
         jobs.processNow(1, iterator, done);
       });
-    });
-  });
-
-  describe.skip('#getHistory', function() {
-    it('gets the requested job history', function(done) {
-      // Set up some jobs.
-      jobModel.setJobs(dbs[1], [{
-        id: 1,
-        jobData: [{
-          retriesRemaining: 1
-        }],
-        processNext: moment().add('milliseconds', 10000).toDate()
-      }, {
-        id: 2,
-        jobData: [{
-          retriesRemaining: 7
-        },
-        { retriesRemaining: 6
-        }],
-        processNext: moment().add('milliseconds', 40000).toDate()
-      }]);
-
-      function cb(err, jobHistory) {
-        expect(jobHistory).to.eql([{
-          retriesRemaining: 7
-        },
-        {
-          retriesRemaining: 6
-        }]);
-        done();
-      }
-      jobs.getHistory(2, cb);
     });
   });
 });
