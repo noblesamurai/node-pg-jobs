@@ -188,7 +188,12 @@ describe('Jobs', function() {
             // Expect the process_at time to be in 10 days.
             // Add 5 minutes to allow for processing lag.
             expect(moment(result[0].process_at).add(5, 'minutes').
-              diff(moment(), 'days')).to.equal(10);
+              // We use hours not days, as moment.js assumes
+              // you want to keep the hour same when adding a unit of days
+              // across daylight savings boundaries. This means the test will
+              // still pass (as it should) if the test is run within ten
+              // days off going off daylight savings time.
+              diff(moment(), 'hours')).to.equal(10 * 24);
             done();
           });
         });
