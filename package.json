@@ -37,9 +37,10 @@
   },
   "dependencies": {
     "async": "~0.2.9",
-    "moment": "~2.5.0",
     "lodash": "~2.4.1",
+    "moment": "~2.5.0",
     "pg": "~2.11.1",
+    "pg-transaction": "^1.0.2",
     "sql": "~0.35.0"
   }
 }

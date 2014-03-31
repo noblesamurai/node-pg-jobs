@@ -51,16 +51,4 @@ exports.obtainLock = function(db, jobId, callback) {
   }
 };
 
-exports.startTxn = function(db, callback) {
-  db.query('begin', callback);
-};
-
-exports.commitTxn = function(db, callback) {
-  db.query('commit', callback);
-};
-
-exports.rollbackTxn = function(db, callback) {
-  db.query('rollback', callback);
-};
-
 // vim: set et sw=2 ts=2 colorcolumn=80:
