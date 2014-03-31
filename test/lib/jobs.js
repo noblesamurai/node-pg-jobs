@@ -322,9 +322,9 @@ describe('Jobs', function() {
 
       it('provides the job id to the iterator', function(done) {
         function iterator(id, job, cb) {
-            expect(id).to.equal(123);
-            jobs.stopProcessing();
-            cb(null, {}, null);
+          expect(id).to.equal(123);
+          jobs.stopProcessing();
+          cb(null, {}, null);
         }
         jobs.eventEmitter.on('stopProcess', done);
         jobs.process(iterator);
