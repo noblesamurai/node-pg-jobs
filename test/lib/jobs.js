@@ -194,7 +194,7 @@ describe('Jobs', function() {
             // you want to keep the hour same when adding a unit of days
             // across daylight savings boundaries. This means the test will
             // still pass (as it should) if the test is run within ten
-            // days off going off daylight savings time.
+            // days of going off daylight savings time.
             diff(moment(), 'hours')).to.equal(10 * 24);
         });
       });
