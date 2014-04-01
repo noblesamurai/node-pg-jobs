@@ -1,7 +1,8 @@
 var sql = require('sql'),
     async = require('async'),
     expect = require('chai').expect,
-    testHelper = require('../helper');
+    testHelper = require('../helper'),
+    jobsModelTest = require('../../models/jobs_test');
 
 var dbConnections = [];
 
@@ -11,7 +12,7 @@ describe('jobs model', function() {
       if (err) return done(err);
       db = results[0];
       db2 = results[1];
-      jobsModel =  require('../../models/jobs')(db);
+      jobsModel =  require('../../models/jobs');
       db.query('delete from job_snapshots', done);
     });
   });
@@ -54,7 +55,7 @@ describe('jobs model', function() {
       checkConditions);
 
       function runTest(callback) {
-        jobsModel.write(null, 0, {one: 1}, callback);
+        jobsModel.write(db, null, 0, {one: 1}, callback);
       }
 
       function checkConditions (err, results) {
@@ -78,7 +79,7 @@ describe('jobs model', function() {
       checkConditions);
 
       function runTest(callback) {
-        jobsModel.write(0, 0, {one: 1}, callback);
+        jobsModel.write(db, 0, 0, {one: 1}, callback);
       }
 
       function checkConditions (err, results) {
@@ -117,11 +118,11 @@ describe('jobs model', function() {
         data: {two: "two"}
       }];
 
-      jobsModel.setJobs(newJobs, done);
+      jobsModelTest.setJobs(db, newJobs, done);
     });
 
     it('gets the next job we should process', function(done) {
-      jobsModel.nextToProcess(checkConditions);
+      jobsModel.nextToProcess(db, checkConditions);
 
       function checkConditions(err, job) {
         if (err) done(err);
@@ -134,12 +135,12 @@ describe('jobs model', function() {
       // Start a txn and leave it hanging.
       db.query('begin', function(err) {
         if (err) return done(err);
-        jobsModel.nextToProcess(runAgain);
+        jobsModel.nextToProcess(db, runAgain);
       });
 
       function runAgain(err) {
         if (err) done(err);
-        jobsModel.nextToProcess(checkConditions);
+        jobsModel.nextToProcess(db, checkConditions);
       }
 
       function checkConditions(err, job) {
