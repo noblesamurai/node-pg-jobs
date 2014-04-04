@@ -1,5 +1,5 @@
 {
-  "name": "node-pg-jobs",
+  "name": "pg-jobs",
   "version": "2.0.0",
   "description": "A simple yet powerful postgres backed job queue for node.js.",
   "main": "index.js",
@@ -19,7 +19,7 @@
     "postgres"
   ],
   "author": "Timothy Leslie Allen <allen.timothy.email@gmail.com> (https://github.com/timlesallen)",
-  "license": "MIT",
+  "license": "BSD",
   "bugs": {
     "url": "https://github.com/noblesamurai/node-pg-jobs/issues"
   },
