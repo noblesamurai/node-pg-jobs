@@ -25,19 +25,20 @@ describe('Jobs', function() {
   });
 
   function lockJob(db, jobId, callback) {
-    db.query('begin', doLocks);
-    function doLocks(err, result) {
-      if (err) return done(err);
-      // Note: In this test we use the job_snapshot id not the job_id as
-      // that is how the locking is done in the query that grabs the next
-      // job.
-      // This only locks one row (not all the snapshots for the job). It
-      // probably would be fine to lock on the job_id, but it is not
-      // necessary as we should only ever have one snapshot of a given job
-      // that is up for processing...
-      db.query('select pg_try_advisory_xact_lock(id) from job_snapshots ' +
-          'where job_id = $1 and processed IS NULL', [jobId], callback);
-    }
+    // Note: In this test we use the job_snapshot id not the job_id as
+    // that is how the locking is done in the query that grabs the next
+    // job.
+    // This only locks one row (not all the snapshots for the job). It
+    // probably would be fine to lock on the job_id, but it is not
+    // necessary as we should only ever have one snapshot of a given job
+    // that is up for processing...
+    db.query('select pg_advisory_lock(id) from job_snapshots ' +
+      'where job_id = $1 and processed IS NULL', [jobId], callback);
+  }
+
+  function unlockJob(db, jobId, callback) {
+    db.query('select pg_advisory_unlock(id) from job_snapshots ' +
+      'where job_id = $1', [jobId], callback);
   }
 
   describe('#create', function() {
@@ -427,7 +428,7 @@ describe('Jobs', function() {
 
         function shouldBeWaiting() {
           wasWaiting = true;
-          dbs[1].query('commit');
+          unlockJob(dbs[1], 1);
         }
 
         jobs.eventEmitter.on('lockObtained', function(err) {
