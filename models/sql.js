@@ -20,6 +20,9 @@ exports.obtainNextUnlockedJob =
       "SELECT j " +
       "FROM job_snapshots AS j " +
       "WHERE process_at IS NOT NULL AND process_at <= now() AND processed IS NULL " +
+      ((process.env.SHARDING_MOD && process.env.SHARDING_REMAINDER) ?
+      ("AND MOD(id, " + process.env.SHARDING_MOD + ") = " + process.env.SHARDING_REMAINDER + " ")
+      : "") +
       "ORDER BY process_at, id " +
       "LIMIT 1 " +
     ") AS t1 " +
