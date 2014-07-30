@@ -6,5 +6,9 @@
   "test": {
     "driver": "pg",
     "database": "node_pg_jobs_test"
+  },
+  "example": {
+    "driver": "pg",
+    "database": "node_pg_jobs_example"
   }
 }
