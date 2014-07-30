@@ -30,9 +30,6 @@ exports.write = function(db, jobId, processIn, data, callback) {
   }
 };
 
-/**
- * Provide your own transaction context.
- */
 exports.nextToProcess = function(db, callback) {
   db.query(sqlQueries.obtainNextUnlockedJob, returnResult);
 
@@ -40,6 +37,10 @@ exports.nextToProcess = function(db, callback) {
     if(err) return callback(err);
     callback(null, result.rows[0]);
   }
+};
+
+exports.unlock = function(db, jobId, callback) {
+  db.query(sqlQueries.unlockJob, [jobId], callback);
 };
 
 exports.obtainLock = function(db, jobId, callback) {

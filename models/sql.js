@@ -15,7 +15,7 @@ exports.obtainNextUnlockedJob =
     // We have to nest the query as the limit will not necessarily
     // be applied before the lock if we do it all in one, hence
     // we could then lock unforseen jobs.
-    "SELECT (j).*, pg_try_advisory_xact_lock((j).id) AS locked " +
+    "SELECT (j).*, pg_try_advisory_lock((j).id) AS locked " +
     "FROM ( " +
       "SELECT j " +
       "FROM job_snapshots AS j " +
@@ -56,9 +56,12 @@ exports.obtainNextUnlockedJob =
   "WHERE id IN (SELECT id FROM candidate_job where locked) " +
   "RETURNING *";
 
+exports.unlockJob = "SELECT pg_advisory_unlock($1);";
+
 exports.obtainLockForJob =
   "UPDATE job_snapshots " +
   "SET processed = NOW() " +
   "WHERE job_id = $1 AND processed IS NULL " +
   "RETURNING *, pg_advisory_xact_lock(id);";
+
 // vim: set et sw=2 ts=2 colorcolumn=80:
