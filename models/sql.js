@@ -62,6 +62,6 @@ exports.obtainLockForJob =
   "UPDATE job_snapshots " +
   "SET processed = NOW() " +
   "WHERE job_id = $1 AND processed IS NULL " +
-  "RETURNING *, pg_advisory_xact_lock(id);";
+  "RETURNING *, pg_advisory_lock(id);";
 
 // vim: set et sw=2 ts=2 colorcolumn=80:

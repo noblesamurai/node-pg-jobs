@@ -39,8 +39,8 @@ exports.nextToProcess = function(db, callback) {
   }
 };
 
-exports.unlock = function(db, jobId, callback) {
-  db.query(sqlQueries.unlockJob, [jobId], callback);
+exports.unlock = function(db, jobId) {
+  db.query(sqlQueries.unlockJob, [jobId]);
 };
 
 exports.obtainLock = function(db, jobId, callback) {
