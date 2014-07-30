@@ -36,6 +36,9 @@ exports.obtainNextUnlockedJob =
           "SELECT j " +
           "FROM job_snapshots AS j " +
           "WHERE process_at IS NOT NULL AND process_at <= now() AND processed IS NULL " +
+          ((process.env.SHARDING_MOD && process.env.SHARDING_REMAINDER) ?
+          ("AND MOD(id, " + process.env.SHARDING_MOD + ") = " + process.env.SHARDING_REMAINDER + " ")
+          : "") +
           // Get the next one in line after the one we tried to lock.
           "AND (process_at, id) > (candidate_job.process_at, candidate_job.id) " +
           "ORDER BY process_at, id " +
