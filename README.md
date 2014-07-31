@@ -11,7 +11,7 @@ the job to be created, and specifying when we should consider the job for servic
  * @param {Object} job The data you want to save for the job.  This is freeform
  *                     and up to you.
  * @param {int} processIn The job will not get service until this many ms have
-                          elapsed.
+                          elapsed. Set to null if you do not want to service it again.
  * @param {function} done Callback.
  */
 jobs.create(jobData, processIn, done);
