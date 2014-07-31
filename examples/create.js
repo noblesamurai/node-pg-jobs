@@ -5,7 +5,7 @@ var _ = require('lodash'),
 
 // get count from the first command line argument (or insert a single job)
 var count = parseInt(process.argv[2], 10) || 1;
-var jobs = require('../lib/jobs')(process.env.DATABASE_URL);
+var jobs = require('../lib/jobs')({ db: process.env.DATABASE_URL });
 
 async.each(_.range(count), function(i, callback) {
   // random requeue count from 0 - 4

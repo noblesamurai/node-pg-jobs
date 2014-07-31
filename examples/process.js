@@ -1,6 +1,6 @@
 'use strict';
 
-var jobs = require('../lib/jobs')(process.env.DATABASE_URL);
+var jobs = require('../lib/jobs')({ db: process.env.DATABASE_URL });
 jobs.process(function(id, job, done) {
   if (job.requeueCount) {
     job.state = 'requeued';
