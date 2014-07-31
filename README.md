@@ -33,7 +33,7 @@ passed the job and a done callback that it should call to notify
 what should happen to the job after processing.  The id is the id
 that was automatically created when the job was created.
 ```javascript
-var callback = function(id, job, done) {
+var worker = function(id, job, done) {
  // Do stuff with job
  job.state = 'a_new_state';
  job.eatBananas = true;
@@ -47,8 +47,9 @@ var callback = function(id, job, done) {
    their delay.
  * @param {function(job, done)} callback The callback to be called on each job.
  *                                       Must call done() as per example above.
+ * @param {function(err)} done Called when stopProcessing() is called or on fatal error.
  */
-jobs.process(callback);
+jobs.process(worker, done);
 
 /**
  * Call this to stop processing.
