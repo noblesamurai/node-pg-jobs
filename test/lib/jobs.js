@@ -12,7 +12,7 @@ describe('Jobs', function() {
     async.times(2, testHelper.connectToDB, function(err, results) {
       if (err) return done(err);
       dbs = results;
-      jobs = require('../../lib/jobs')(process.env.DATABASE_URL);
+      jobs = require('../../lib/jobs')({ db: process.env.DATABASE_URL });
       jobsModelTest = require('../../models/jobs_test');
       done();
     });

@@ -34,7 +34,12 @@ exports.nextToProcess = function(db, callback) {
   db.query(sqlQueries.obtainNextUnlockedJob, returnResult);
 
   function returnResult(err, result) {
-    if(err) return callback(err);
+    if(err) {
+      return callback(err);
+    }
+    if(!result.rows) {
+      return callback();
+    }
     callback(null, result.rows[0]);
   }
 };
