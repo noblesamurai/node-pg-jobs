@@ -331,6 +331,10 @@ describe('Jobs', function() {
         jobs.process(iterator);
       });
     });
+    if('calls the callback when finished', function(done) {
+      jobs.process(function() {}, done);
+      jobs.stopProcessing();
+    });
   });
   describe('#processNow', function() {
     describe('when called on a not locked job', function() {
