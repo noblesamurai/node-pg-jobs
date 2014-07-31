@@ -88,6 +88,14 @@ var callback = function(err, jobData, done) {
 jobs.processNow(id, callback, done);
 ```
 
+# Running migrations
+```script
+npm install -g db-migrate
+npm install -g pg
+db-migrate up -m migrations/ --config database.json
+```
+will create "node_pg_jobs_dev".
+
 # Running migrations on heroku
 This is a bit yuk, but it should work:
 ```
