@@ -30,6 +30,10 @@ exports.write = function(db, jobId, processIn, data, callback) {
   }
 };
 
+exports.setProcessedNow = function(db, jobId) {
+  db.query(sqlQueries.setProcessedNow, [jobId]);
+}
+
 exports.nextToProcess = function(db, callback) {
   db.query(sqlQueries.obtainNextUnlockedJob, returnResult);
 
