@@ -138,8 +138,11 @@ describe('jobs model', function() {
         jobsModel.nextToProcess(db, runAgain);
       });
 
-      function runAgain(err) {
+      function runAgain(err, job) {
         if (err) done(err);
+        // mark the previous job as processed
+        jobsModel.setProcessedNow(db, job.job_id);
+
         jobsModel.nextToProcess(db, checkConditions);
       }
 
