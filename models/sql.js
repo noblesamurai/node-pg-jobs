@@ -27,7 +27,7 @@ exports.obtainNextUnlockedJob =
     // temp table was not successfully locked. It will replace what is in the
     // temp table.
     "UNION ALL ( " +
-      "SELECT (j).*, pg_try_advisory_xact_lock((j).id) AS locked " +
+      "SELECT (j).*, pg_try_advisory_lock((j).id) AS locked " +
       "FROM ( " +
         "SELECT ( " +
           "SELECT j " +
