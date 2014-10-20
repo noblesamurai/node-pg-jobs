@@ -27,7 +27,7 @@ exports.obtainNextUnlockedJob =
     // temp table was not successfully locked. It will replace what is in the
     // temp table.
     "UNION ALL ( " +
-      "SELECT (j).*, pg_try_advisory_xact_lock((j).id) AS locked " +
+      "SELECT (j).*, pg_try_advisory_lock((j).id) AS locked " +
       "FROM ( " +
         "SELECT ( " +
           "SELECT j " +
@@ -51,17 +51,18 @@ exports.obtainNextUnlockedJob =
   // them all and couldn't lock one, in which case we'll be left with the last
   // one we couldn't. (Hence the "where locked" so we get an empty result set
   // in that case).
-  "UPDATE job_snapshots " +
-  "SET processed = NOW() " +
-  "WHERE id IN (SELECT id FROM candidate_job where locked) " +
-  "RETURNING *";
+  "SELECT * FROM job_snapshots " +
+  "WHERE id IN (SELECT id FROM candidate_job WHERE locked)";
 
 exports.unlockJob = "SELECT pg_advisory_unlock($1);";
 
 exports.obtainLockForJob =
+  "SELECT *, pg_advisory_lock(id) FROM job_snapshots " +
+  "WHERE job_id = $1 AND processed IS NULL";
+
+exports.setProcessedNow =
   "UPDATE job_snapshots " +
   "SET processed = NOW() " +
-  "WHERE job_id = $1 AND processed IS NULL " +
-  "RETURNING *, pg_advisory_lock(id);";
+  "WHERE job_id = $1 AND processed IS NULL";
 
 // vim: set et sw=2 ts=2 colorcolumn=80:
