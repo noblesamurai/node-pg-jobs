@@ -1,4 +1,4 @@
-var expect = require('chai').expect,
+var expect = require('expect.js'),
     moment = require('moment'),
     sinon = require('sinon'),
     async = require('async'),
@@ -47,10 +47,16 @@ describe('Jobs', function() {
     });
 
     it('creates a job with given initial state, time ' +
-      'to process in and payload, returning said job as well.',
+      'to process in and payload, giving id of created job.',
       function(done) {
         var now = moment();
-        var cb = function() {
+
+        jobs.create({state: 'waiting', date: 'some'}, 100 * 1000, expectations);
+
+        function expectations(err, id) {
+          if (err) return done(err);
+          expect(id).to.be.a('number');
+
           jobsModelTest.getJobs(dbs[1], function(err, result) {
             if (err) return done(err);
 
@@ -61,8 +67,7 @@ describe('Jobs', function() {
             expect(result[0].data).to.have.property('state', 'waiting');
             done();
           });
-        };
-        jobs.create({state: 'waiting', date: 'some'}, 100 * 1000, cb);
+        }
       });
   });
 

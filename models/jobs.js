@@ -25,14 +25,17 @@ exports.write = function(db, jobId, processIn, data, callback) {
   } else {
     sql =
       "INSERT INTO job_snapshots (data, process_at) VALUES ($1, " +
-      processAt + ");";
-    db.query(sql, [data], callback);
+      processAt + ") RETURNING job_id;";
+    db.query(sql, [data], function (err, result) {
+      if(err) return callback(err);
+      return callback(null, result.rows[0].job_id);
+    });
   }
 };
 
 exports.setProcessedNow = function(db, jobId) {
   db.query(sqlQueries.setProcessedNow, [jobId]);
-}
+};
 
 exports.nextToProcess = function(db, callback) {
   db.query(sqlQueries.obtainNextUnlockedJob, returnResult);
