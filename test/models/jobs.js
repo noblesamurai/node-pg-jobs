@@ -100,7 +100,6 @@ describe('jobs model', function() {
       function expectations(err, id) {
         if (err) return done(err);
         expect(id).to.be.a('number');
-        console.log(id);
         done();
       }
     });

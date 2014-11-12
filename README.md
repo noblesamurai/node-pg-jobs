@@ -70,7 +70,7 @@ be passed to the callback.
 
 ```javascript
 // Form of callback for jobs.processNow():
-var callback = function(err, jobData, done) {
+var callback = function(id, jobData, done) {
  // Do stuff with job
  doSomeAction(jobData);
  jobData.state = 'a_new_state';

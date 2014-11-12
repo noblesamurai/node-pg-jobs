@@ -362,7 +362,8 @@ describe('Jobs', function() {
 
       it('immediately runs the callback on the requested job, updating it',
           function(done) {
-        var iterator = function(err, job, cb) {
+        var iterator = function(id, job, cb) {
+          expect(id).to.be(1);
           expect(job).to.have.property('retriesRemaining', 1);
           job.retriesRemaining = 2;
           return cb(null, job, 200);
