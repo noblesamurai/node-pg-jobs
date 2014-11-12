@@ -1,6 +1,6 @@
 var expect = require('expect.js'),
     moment = require('moment'),
-    sinon = require('sinon'),
+    Sinon = require('sinon'),
     async = require('async'),
     _ = require('lodash'),
     testHelper = require('../helper');
@@ -448,6 +448,17 @@ describe('Jobs', function() {
 
         // Run the test.
         jobs.processNow(1, iterator, done);
+      });
+    });
+    describe('when called on a job that does not exist', function() {
+      it('calls the callback with an error', function(done) {
+        var iterator = Sinon.stub().throws(new Error('I should not be called.'));
+
+        jobs.processNow(999, iterator, expectations);
+        function expectations(err) {
+          expect(err).to.be.ok();
+          done();
+        }
       });
     });
   });
