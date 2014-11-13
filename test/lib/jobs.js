@@ -462,6 +462,16 @@ describe('Jobs', function() {
         }
       });
     });
+    describe('when the worker calls done() with an error', function() {
+      it('calls the callback with an error', function(done) {
+        var iterator = Sinon.stub().callsArgWith(2, 'yo');
+        jobs.processNow(1, iterator, expectations);
+        function expectations(err) {
+          expect(err).to.equal('yo');
+          done();
+        }
+      });
+    });
   });
 });
 

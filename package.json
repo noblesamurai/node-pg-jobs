@@ -35,7 +35,7 @@
     "lodash": "~2.4.1",
     "moment": "~2.5.0",
     "pg": "~2.11.1",
-    "pg-transaction": "^1.0.2",
+    "pg-transaction": "git+https://github.com/timlesallen/node-pg-transaction.git#43466cd5812f4c05cba59d324fe8f9ccbde50c6b",
     "sql": "~0.35.0"
   }
 }
