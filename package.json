@@ -24,11 +24,10 @@
     "url": "https://github.com/noblesamurai/node-pg-jobs/issues"
   },
   "devDependencies": {
-    "mocha-unfunk-reporter": "~0.4.0",
-    "sinon": "~1.7.3",
-    "chai": "~1.8.1",
+    "db-migrate": "~0.6.4",
+    "expect.js": "^0.3.1",
     "mocha": "~1.17.1",
-    "db-migrate": "~0.6.4"
+    "sinon": "~1.7.3"
   },
   "dependencies": {
     "async": "~0.2.9",
@@ -36,7 +35,7 @@
     "lodash": "~2.4.1",
     "moment": "~2.5.0",
     "pg": "~2.11.1",
-    "pg-transaction": "^1.0.2",
+    "pg-transaction": "git+https://github.com/timlesallen/node-pg-transaction.git#43466cd5812f4c05cba59d324fe8f9ccbde50c6b",
     "sql": "~0.35.0"
   }
 }

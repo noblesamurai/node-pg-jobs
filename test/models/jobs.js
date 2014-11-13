@@ -1,6 +1,6 @@
 var sql = require('sql'),
     async = require('async'),
-    expect = require('chai').expect,
+    expect = require('expect.js'),
     testHelper = require('../helper'),
     jobsModelTest = require('../../models/jobs_test');
 
@@ -90,6 +90,16 @@ describe('jobs model', function() {
 
         // It got assigned the id we requested
         expect(results.maxId).to.equal(0);
+        done();
+      }
+    });
+
+    it('returns the id of the job created when id not specified', function(done) {
+      jobsModel.write(db, null, 0, {one: 1}, expectations);
+
+      function expectations(err, id) {
+        if (err) return done(err);
+        expect(id).to.be.a('number');
         done();
       }
     });

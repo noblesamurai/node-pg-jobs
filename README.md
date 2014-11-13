@@ -63,14 +63,19 @@ think this is necessary or put up a pull request.
 
 ## Make it happen now
 
-If you want a job to get service right away (due to say, some external event occurring), you can
-do it like so.  NB that you if the job is currently enjoying service in `jobs.process()` the
-callback will only be called after it is finished.  If the job cannot be found, an error will
-be passed to the callback.
+If you want a job to service a job right away (due to say, some external event
+occurring), use `processNow()`.
+If the job is currently being serviced in a `jobs.process()` the
+worker will only be called after it is finished.
+
+*If the job cannot be found*, `callback()` will be called with an error. `worker()`
+will not be called.
+
+*If the `done()` function passed to `worker()` is called with an error* then no
+changes are made to the job, and `callback` will be passed that error.
 
 ```javascript
-// Form of callback for jobs.processNow():
-var callback = function(err, jobData, done) {
+var worker = function(id, jobData, done) {
  // Do stuff with job
  doSomeAction(jobData);
  jobData.state = 'a_new_state';
@@ -82,11 +87,11 @@ var callback = function(err, jobData, done) {
 
 /** The job with the given id will be run now.
  * @param {int} id The ID of the job to run now.
- * @param {function} callback - The callback to be passed the job, of the same
+ * @param {function} worker - The callback to be passed the job, of the same
                                 form as for jobs.process().
- * @param {function} done - callback called when everything is completed.
+ * @param {function} callback - callback called when everything is completed.
  */
-jobs.processNow(id, callback, done);
+jobs.processNow(id, worker, callback);
 ```
 
 # Running migrations

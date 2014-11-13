@@ -1,6 +1,6 @@
-var expect = require('chai').expect,
+var expect = require('expect.js'),
     moment = require('moment'),
-    sinon = require('sinon'),
+    Sinon = require('sinon'),
     async = require('async'),
     _ = require('lodash'),
     testHelper = require('../helper');
@@ -47,10 +47,16 @@ describe('Jobs', function() {
     });
 
     it('creates a job with given initial state, time ' +
-      'to process in and payload, returning said job as well.',
+      'to process in and payload, giving id of created job.',
       function(done) {
         var now = moment();
-        var cb = function() {
+
+        jobs.create({state: 'waiting', date: 'some'}, 100 * 1000, expectations);
+
+        function expectations(err, id) {
+          if (err) return done(err);
+          expect(id).to.be.a('number');
+
           jobsModelTest.getJobs(dbs[1], function(err, result) {
             if (err) return done(err);
 
@@ -61,8 +67,7 @@ describe('Jobs', function() {
             expect(result[0].data).to.have.property('state', 'waiting');
             done();
           });
-        };
-        jobs.create({state: 'waiting', date: 'some'}, 100 * 1000, cb);
+        }
       });
   });
 
@@ -357,7 +362,8 @@ describe('Jobs', function() {
 
       it('immediately runs the callback on the requested job, updating it',
           function(done) {
-        var iterator = function(err, job, cb) {
+        var iterator = function(id, job, cb) {
+          expect(id).to.be(1);
           expect(job).to.have.property('retriesRemaining', 1);
           job.retriesRemaining = 2;
           return cb(null, job, 200);
@@ -443,6 +449,27 @@ describe('Jobs', function() {
 
         // Run the test.
         jobs.processNow(1, iterator, done);
+      });
+    });
+    describe('when called on a job that does not exist', function() {
+      it('calls the callback with an error', function(done) {
+        var iterator = Sinon.stub().throws(new Error('I should not be called.'));
+
+        jobs.processNow(999, iterator, expectations);
+        function expectations(err) {
+          expect(err).to.be.ok();
+          done();
+        }
+      });
+    });
+    describe('when the worker calls done() with an error', function() {
+      it('calls the callback with an error', function(done) {
+        var iterator = Sinon.stub().callsArgWith(2, 'yo');
+        jobs.processNow(1, iterator, expectations);
+        function expectations(err) {
+          expect(err).to.equal('yo');
+          done();
+        }
       });
     });
   });
