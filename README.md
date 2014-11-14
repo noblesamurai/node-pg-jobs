@@ -3,9 +3,16 @@ node-pg-jobs
 
 A simple yet flexible postgres backed job queue for node.js.
 
-# Create a job
-Creating a job is simple a matter of calling `jobs.create()` with a freeform object representing
-the job to be created, and specifying when we should consider the job for service.
+```javascript
+var job = require('pg-jobs')({
+  db: 'postgres://localhost/mydb'
+});
+```
+
+*Creating a job* is simple a matter of calling `jobs.create()` with a freeform
+object representing the job to be created, and specifying when we should
+consider the job for service.
+
 ```javascript
 /**
  * @param {Object} job The data you want to save for the job.  This is freeform
@@ -25,12 +32,12 @@ jobs.create({
 }, 2000, done);
 ```
 
-# Process jobs
-## Providing continual service
-The callback function passed to `jobs.process()` is the brains here.
+## Process jobs
+### Providing continual service
+The `worker` function passed to `jobs.process()` is the brains here.
 It defines what will happen when a job receives service.  It is
 passed the job and a done callback that it should call to notify
-what should happen to the job after processing.  The id is the id
+what should happen to the job after processing.  The `id` is the `id`
 that was automatically created when the job was created.
 ```javascript
 var worker = function(id, job, done) {
@@ -45,7 +52,7 @@ var worker = function(id, job, done) {
 /**
  * Iterate through all scheduled jobs and service those that have served out
    their delay.
- * @param {function(job, done)} callback The callback to be called on each job.
+ * @param {function(job, done)} worker The callback to be called on each job.
  *                                       Must call done() as per example above.
  * @param {function(err)} done Called when stopProcessing() is called or on fatal error.
  */
@@ -56,17 +63,16 @@ jobs.process(worker, done);
  */
 jobs.stopProcessing();
 ```
-Note that at present jobs.process() is synchronous (processes one job after the
+Note that jobs.process() is synchronous (processes one job after the
 other) but you can safely run two calls to it either in the same or different
-processes. It wouldn't be too hard to change this, let me know if you really
-think this is necessary or put up a pull request.
+processes.
 
-## Make it happen now
+### Make it happen now
 
 If you want a job to service a job right away (due to say, some external event
 occurring), use `processNow()`.
-If the job is currently being serviced in a `jobs.process()` the
-worker will only be called after it is finished.
+If the job is currently being serviced in a `jobs.process()` or another
+`jobs.processNow()` the worker will only be called when the lock has been ceded.
 
 *If the job cannot be found*, `callback()` will be called with an error. `worker()`
 will not be called.
@@ -94,7 +100,7 @@ var worker = function(id, jobData, done) {
 jobs.processNow(id, worker, callback);
 ```
 
-# Running migrations
+## Running migrations
 ```script
 npm install -g db-migrate
 npm install -g pg
@@ -102,7 +108,7 @@ db-migrate up -m migrations/ --config database.json
 ```
 will create "node_pg_jobs_dev".
 
-# Running migrations on heroku
+## Running migrations on heroku
 This is a bit yuk, but it should work:
 ```
 heroku run bash
