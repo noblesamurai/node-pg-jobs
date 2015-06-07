@@ -1,6 +1,6 @@
 {
   "name": "pg-jobs",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "A simple yet powerful postgres backed job queue for node.js.",
   "main": "index.js",
   "directories": {
@@ -30,11 +30,11 @@
     "sinon": "~1.7.3"
   },
   "dependencies": {
-    "async": "~0.2.9",
+    "async": "~1.2.0",
     "debug": "^2.0.0",
-    "lodash": "~2.4.1",
+    "lodash": "~3.9.3",
     "moment": "~2.5.0",
-    "pg": "~2.11.1",
+    "pg": "~4.4.0",
     "pg-transaction": "^1.0.4",
     "sql": "~0.35.0"
   }
