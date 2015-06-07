@@ -11,7 +11,7 @@ var  moment = require('moment'),
  * @param {Object} data The job data.
  * @param {function} callback(err, jobId)
  */
-exports.write = function(db, jobId, processIn, data, callback) {
+exports.write = function(db, jobId, processIn, data, callback, tableName) {
   var processAt = (processIn === null) ?
       null :
       // parseInt for injection attack prevention.
@@ -19,12 +19,12 @@ exports.write = function(db, jobId, processIn, data, callback) {
   var sql;
   if (jobId !== null) {
     sql =
-      "INSERT INTO job_snapshots (job_id, data, process_at) VALUES ($1, $2, " +
+      "INSERT INTO " + tableName + " (job_id, data, process_at) VALUES ($1, $2, " +
       processAt + ");";
     db.query(sql, [jobId, data], callback);
   } else {
     sql =
-      "INSERT INTO job_snapshots (data, process_at) VALUES ($1, " +
+      "INSERT INTO " + tableName + " (data, process_at) VALUES ($1, " +
       processAt + ") RETURNING job_id;";
     db.query(sql, [data], function (err, result) {
       if(err) return callback(err);
@@ -33,12 +33,12 @@ exports.write = function(db, jobId, processIn, data, callback) {
   }
 };
 
-exports.setProcessedNow = function(db, jobId) {
-  db.query(sqlQueries.setProcessedNow, [jobId]);
+exports.setProcessedNow = function(db, jobId, tableName) {
+  db.query(sqlQueries.setProcessedNow(tableName), [jobId]);
 };
 
-exports.nextToProcess = function(db, callback) {
-  db.query(sqlQueries.obtainNextUnlockedJob, returnResult);
+exports.nextToProcess = function(db, callback, tableName) {
+  db.query(sqlQueries.obtainNextUnlockedJob(tableName), returnResult);
 
   function returnResult(err, result) {
     if(err) {
@@ -55,8 +55,8 @@ exports.unlock = function(db, jobId) {
   db.query(sqlQueries.unlockJob, [jobId]);
 };
 
-exports.obtainLock = function(db, jobId, callback) {
-  db.query(sqlQueries.obtainLockForJob, [jobId], gotResult);
+exports.obtainLock = function(db, jobId, callback, tableName) {
+  db.query(sqlQueries.obtainLockForJob(tableName), [jobId], gotResult);
 
   function gotResult(err, result) {
     if (err) return callback(err);
