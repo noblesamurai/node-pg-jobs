@@ -56,9 +56,9 @@ exports.obtainNextUnlockedJob =
 
 exports.unlockJob = "SELECT pg_advisory_unlock($1);";
 
-exports.obtainLockForJob =
-  "SELECT pg_advisory_lock(id) FROM job_snapshots " +
-  "WHERE job_id = $1 AND processed IS NULL";
+exports.obtainLockForJob = "SELECT pg_advisory_lock($1);";
+
+exports.latestDataForJob = "SELECT * FROM job_snapshots WHERE job_id = $1 AND processed IS NULL";
 
 exports.getJobData =
   "SELECT * FROM job_snapshots " +

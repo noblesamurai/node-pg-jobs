@@ -24,7 +24,7 @@
     "url": "https://github.com/noblesamurai/node-pg-jobs/issues"
   },
   "devDependencies": {
-    "db-migrate": "~0.6.4",
+    "db-migrate": "^0.9.18",
     "expect.js": "^0.3.1",
     "mocha": "~1.17.1",
     "sinon": "~1.7.3"
