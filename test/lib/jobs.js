@@ -491,6 +491,23 @@ describe('Jobs', function() {
         done();
       }
     });
+    describe('when two calls for the same jobs conflict', function() {
+      it('make sure the second one will see the first call\'s changes', function(done) {
+        jobs.processNow(1, firstIterator);
+
+        function firstIterator(jobId, jobData, cb) {
+          jobData.changed = true;
+          jobs.processNow(jobId, secondIterator);
+          cb(null, jobData);
+        }
+
+        function secondIterator(jobId, jobData, cb) {
+          expect(jobData.changed).to.be(true);
+          cb(null, jobData);
+          done();
+        }
+      });
+    });
   });
 });
 
