@@ -112,9 +112,8 @@ will create "node_pg_jobs_dev".
 This is a bit yuk, but it should work:
 ```
 heroku run bash
-npm install -g db-migrate
 npm install db-migrate
-db-migrate up -m node_modules/node-pg-jobs/migrations/ --config $DATABASE_URL
+./node_modules/.bin/db-migrate up -m ./node_modules/pg-jobs/migrations/ --config $DATABASE_URL
 exit
 ```
 
