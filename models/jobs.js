@@ -56,9 +56,14 @@ exports.unlock = function(db, jobId) {
 };
 
 exports.obtainLock = function(db, jobId, callback) {
-  db.query(sqlQueries.obtainLockForJob, [jobId], gotResult);
+  db.query(sqlQueries.obtainLockForJob, [jobId], gotLock);
 
-  function gotResult(err, result) {
+  function gotLock(err, result) {
+    if (err) return callback(err);
+    db.query(sqlQueries.getJobData, [jobId], gotData);
+  }
+
+  function gotData(err, result) {
     if (err) return callback(err);
     callback(null, result.rows[0]);
   }

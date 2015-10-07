@@ -472,6 +472,25 @@ describe('Jobs', function() {
         }
       });
     });
+    it('always gives waiting processNow() requests fresh data', function(done) {
+      jobs.create({}, null, created);
+
+      function created(err, jobId) {
+        if (err) return done(err);
+        jobs.processNow(jobId, iterator);
+      }
+
+      function iterator(jobId, data, callback) {
+        data.marked = true;
+        jobs.processNow(jobId, expectations);
+        setTimeout(function() {callback(null, data, null);}, 100);
+      }
+
+      function expectations(jobId, data, callback) {
+        expect(data.marked).to.be(true);
+        done();
+      }
+    });
   });
 });
 
