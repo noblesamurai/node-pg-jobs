@@ -61,10 +61,11 @@ exports.obtainLock = function(db, jobId, callback) {
   function gotLock(err, result) {
     if (err) return callback(err);
     db.query(sqlQueries.getJobData, [jobId], gotData);
-    function gotData(err, result) {
-      if (err) return callback(err);
-      callback(null, result.rows[0]);
-    }
+  }
+
+  function gotData(err, result) {
+    if (err) return callback(err);
+    callback(null, result.rows[0]);
   }
 };
 
