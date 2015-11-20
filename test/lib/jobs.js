@@ -455,14 +455,12 @@ describe('Jobs', function() {
           jobs.processNow(jobId, firstIterator);
 
           function firstIterator(jobId, jobData, cb) {
-            console.log('firstIterator');
             jobData.changed = true;
             jobs.processNow(jobId, secondIterator, done);
             cb(null, jobData);
           }
 
           function secondIterator(jobId, jobData, cb) {
-            console.log('2ndIterator');
             expect(jobData.changed).to.be(true);
             cb(null, jobData);
           }
