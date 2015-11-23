@@ -438,7 +438,7 @@ describe('Jobs', function() {
       function iterator(jobId, data, callback) {
         data.marked = true;
         jobs.processNow(jobId, expectations);
-        setTimeout(function() {callback(null, data, null);}, 100);
+        setTimeout(function() {callback(null, data, null);}, 1);
       }
 
       function expectations(jobId, data, callback) {
