@@ -1,6 +1,6 @@
 {
   "name": "pg-jobs",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "A simple yet powerful postgres backed job queue for node.js.",
   "main": "index.js",
   "directories": {
@@ -36,7 +36,7 @@
     "debug": "^2.0.0",
     "lodash": "~2.4.1",
     "moment": "~2.5.0",
-    "pg": "~2.11.1",
+    "pg": "~4.4.3",
     "pg-transaction": "^1.0.4",
     "sql": "~0.35.0"
   }
