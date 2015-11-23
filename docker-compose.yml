@@ -1,0 +1,14 @@
+pg_jobs:
+  build: .
+  links:
+    - postgres 
+  volumes:
+    - ./lib:/code/lib
+    - ./package.json:/code/package.json
+  environment:
+    - DATABASE_URL=pg://postgres:postgres@postgres/node_pg_jobs_test
+
+postgres:
+  image: postgres
+  environment:
+    - POSTGRES_PASSWORD=postgres

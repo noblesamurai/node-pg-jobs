@@ -1,5 +1,6 @@
 var  moment = require('moment'),
-    sqlQueries = require('./sql');
+    sqlQueries = require('./sql'),
+    debug = require('debug')('pg-jobs:jobs-model');
 
 /**
  * @param {Object} db The db client to use.
@@ -51,22 +52,20 @@ exports.nextToProcess = function(db, callback) {
   }
 };
 
-exports.unlock = function(db, jobId) {
-  db.query(sqlQueries.unlockJob, [jobId]);
+exports.unlock = function(db, jobId, callback) {
+  db.query(sqlQueries.unlockJob, [jobId], callback);
 };
 
 exports.obtainLock = function(db, jobId, callback) {
-  db.query(sqlQueries.obtainLockForJob, [jobId], gotLock);
+  db.query(sqlQueries.obtainLockForJob, [jobId], callback);
+};
 
-  function gotLock(err, result) {
+exports.getDataForJob = function(db, jobId, callback) {
+  db.query(sqlQueries.latestDataForJob, [jobId], function(err, result) {
+    debug(result);
     if (err) return callback(err);
-    db.query(sqlQueries.getJobData, [jobId], gotData);
-  }
-
-  function gotData(err, result) {
-    if (err) return callback(err);
-    callback(null, result.rows[0]);
-  }
+    return callback(null, result.rows[0]);
+  });
 };
 
 // vim: set et sw=2 ts=2 colorcolumn=80:

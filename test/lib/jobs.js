@@ -235,18 +235,22 @@ describe('Jobs', function() {
 
       it('provides service only when correct number of ms have elapsed.',
           function(done) {
-        // Set up our condition.
-        jobs.eventEmitter.on('drain', function() {
-            // Only the first job should have got service, and only twice as it
-            // only had one retry remaining.
-            expect(jobUpdatedCount, 'number of times we serviced a job').
-              to.equal(2);
-          jobs.stopProcessing();
-          done();
-        });
+        async.parallel([
+          jobs.create.bind(null, {name: 'jobOne'}, 20),
+          jobs.create.bind(null, {name: 'jobTwo'}, 10)
+        ], created);
 
-        // Run the test.
-        jobs.process(jobIterator);
+        function created(err) {
+          if (err) return done(err);
+
+          jobs.process(iterator);
+        }
+
+        function iterator(jobId, jobData, cb) {
+          if (jobData.name === 'jobOne') throw new Error('should not service jobOne before jobTwo');
+          cb();
+          done();
+        }
       });
     });
 
@@ -274,21 +278,6 @@ describe('Jobs', function() {
         function lockFirstJob() {
           lockJob(dbs[1], 1, done);
         }
-      });
-
-      it('will not service it.', function(done) {
-        jobs.eventEmitter.on('drain', function() {
-          // Only the second job should have got service, six times.
-          // This test also shows starvation does not occur, as the first
-          // job should be considered for service first (but is locked).
-          // Correct behaviour is to move on to the second.
-          expect(jobUpdatedCount, 'number of times we serviced a job').
-            to.equal(6);
-          jobs.stopProcessing();
-          done();
-        });
-
-        jobs.process(jobIterator);
       });
     });
 
@@ -371,25 +360,10 @@ describe('Jobs', function() {
 
         // Set up condition
         var checkConditions =  function() {
-          jobsModelTest.getJobs(dbs[1], function(err, result) {
-            if (err) return done(err);
-
-            // check snapshots for job 1
-            var snapshots = _.filter(result, {job_id: 1});
-
-            expect(snapshots).to.have.length(2);
-
-            // There should be a single snapshot with a processed value (the
-            // previously existing one).
-            expect(_.reject(snapshots, {processed: null}).length).to.equal(1);
-
-            // There should be a single snapshot entry with 2 retries remaining
-            // and it should not have a processed value.
-            expect(_.filter(snapshots,
-                {processed: null, data: {'retriesRemaining': 2}}).length).
-                to.equal(1);
-            done();
-          });
+          jobs.processNow(1, function(jobId, jobData, cb) {
+            expect(jobData.retriesRemaining).to.be(2);
+            cb(null, {}, null);
+          }, done);
         };
 
         // Run the test.
@@ -415,37 +389,18 @@ describe('Jobs', function() {
 
       it('waits until the lock is ceeded',
           function(done) {
-        // We first obtain a lock on the job. Then we run processNow().
-        // It should be waiting.  We then release our lock.  We then see that
-        // it ran.
+        var secondOne = false;
 
         var iterator = function(err, job, cb) {
-          jobsModelTest.getJobs(dbs[1], function(err, result) {
-            if (err) return done(err);
-            return cb(null, job, 200);
+
+          // This second call should not get service right now
+          jobs.processNow(1, function(jobId, jobData, cb) {
+            secondOne = true;
+            cb();
           });
+          expect(secondOne).to.be(false);
+          cb();
         };
-
-        var wasWaiting = false;
-
-        jobs.eventEmitter.on('lockSought', function() {
-          // Yes, this is hacky.  We assume that the obtaining of the lock
-          // will always take < 100ms.  I could mock out the dbs[0], but this would
-          // then be less 'realistic'.  Open to suggestions on how to do this
-          // better!
-          setTimeout(shouldBeWaiting, 100);
-        });
-
-        function shouldBeWaiting() {
-          wasWaiting = true;
-          unlockJob(dbs[1], 1);
-        }
-
-        jobs.eventEmitter.on('lockObtained', function(err) {
-          jobs.stopProcessing();
-          if (err) return done(err);
-          expect(wasWaiting).to.equal(true);
-        });
 
         // Run the test.
         jobs.processNow(1, iterator, done);
@@ -455,7 +410,7 @@ describe('Jobs', function() {
       it('calls the callback with an error', function(done) {
         var iterator = Sinon.stub().throws(new Error('I should not be called.'));
 
-        jobs.processNow(999, iterator, expectations);
+        jobs.processNow(9999999, iterator, expectations);
         function expectations(err) {
           expect(err).to.be.ok();
           done();
@@ -483,13 +438,34 @@ describe('Jobs', function() {
       function iterator(jobId, data, callback) {
         data.marked = true;
         jobs.processNow(jobId, expectations);
-        setTimeout(function() {callback(null, data, null);}, 100);
+        setTimeout(function() {callback(null, data, null);}, 1);
       }
 
       function expectations(jobId, data, callback) {
         expect(data.marked).to.be(true);
         done();
       }
+    });
+    describe('when two calls for the same jobs conflict', function() {
+      it('make sure the second one will see the first call\'s changes', function(done) {
+        this.timeout(10000);
+        jobs.create({}, null, function(err, jobId) {
+          if (err) return done(err);
+
+          jobs.processNow(jobId, firstIterator);
+
+          function firstIterator(jobId, jobData, cb) {
+            jobData.changed = true;
+            jobs.processNow(jobId, secondIterator, done);
+            cb(null, jobData);
+          }
+
+          function secondIterator(jobId, jobData, cb) {
+            expect(jobData.changed).to.be(true);
+            cb(null, jobData);
+          }
+        });
+      });
     });
   });
 });
