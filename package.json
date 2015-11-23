@@ -19,7 +19,7 @@
     "postgres"
   ],
   "author": "Timothy Leslie Allen <allen.timothy.email@gmail.com> (https://github.com/timlesallen)",
-  "license": "BSD",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/noblesamurai/node-pg-jobs/issues"
   },
