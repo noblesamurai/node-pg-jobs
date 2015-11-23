@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "DATABASE_URL=postgres://localhost/node_pg_jobs_test NODE_ENV=test mocha --recursive ./test"
+    "test": "node db-destroy-create && db-migrate up -e test && NODE_ENV=test mocha --recursive ./test"
   },
   "repository": {
     "type": "git",
@@ -24,9 +24,11 @@
     "url": "https://github.com/noblesamurai/node-pg-jobs/issues"
   },
   "devDependencies": {
-    "db-migrate": "^0.9.18",
+    "db-migrate": "^0.10.0-beta.4",
+    "db-migrate-pg": "^0.1.6",
     "expect.js": "^0.3.1",
     "mocha": "~1.17.1",
+    "pg-destroy-create-db": "^1.0.2",
     "sinon": "~1.7.3"
   },
   "dependencies": {

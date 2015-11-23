@@ -117,6 +117,17 @@ npm install db-migrate
 exit
 ```
 
+# Development
+## Tests
+```
+docker-compose up pg_jobs
+```
+OR if you have a local postgres with correct user acc:
+```
+npm test
+```
+
+
 ## License
 
 (The MIT License)
