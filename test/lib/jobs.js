@@ -426,6 +426,27 @@ describe('Jobs', function() {
           done();
         }
       });
+      it('releases the job', function(done) {
+        jobs.create({}, null, created);
+      
+        var jobId;
+        function created(err, _jobId) {
+          if (err) return done(err);
+          jobId = _jobId;
+          jobs.processNow(jobId, iterator);
+        }
+      
+        var callCount = 0;
+        function iterator(jobId, data, callback) {
+          if (++callCount === 2) {
+            callback();
+            return done();
+          }
+      
+          jobs.processNow(jobId, iterator);
+          setTimeout(function() {callback(new Error('boom!'))}, 100);
+        }
+      });
     });
     it('always gives waiting processNow() requests fresh data', function(done) {
       jobs.create({}, null, created);
