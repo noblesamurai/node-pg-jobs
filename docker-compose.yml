@@ -18,4 +18,4 @@ psql:
   image: postgres
   links:
     -  postgres
-  command: bash -c 'psql -h "$$POSTGRES_PORT_5432_TCP_ADDR" -p "$$POSTGRES_PORT_5432_TCP_PORT" -U postgres'
+  command: bash -c 'psql -h "$$POSTGRES_PORT_5432_TCP_ADDR" -p "$$POSTGRES_PORT_5432_TCP_PORT" -U postgres node_pg_jobs_test'
