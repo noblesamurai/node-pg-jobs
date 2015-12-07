@@ -7,7 +7,8 @@ pg_jobs:
     - ./test:/code/test
     - ./package.json:/code/package.json
   environment:
-    - DATABASE_URL=pg://postgres:postgres@postgres/node_pg_jobs_test
+    - DATABASE_URL=pg://postgres:postgres@postgres/pg_jobs_test
+    - NODE_ENV=test
 
 postgres:
   image: postgres
