@@ -9,7 +9,7 @@ exports.up = function(db, callback) {
         "job_id        integer DEFAULT nextval('job_snapshots_job_id_seq')," + // i.e. not unique but will self increment if null
         "process_at    timestamp with time zone," +
         "processed     timestamp with time zone," +
-        "data          json," +
+        "data          jsonb," +
         "created_at    timestamp with time zone NOT NULL DEFAULT now()" +
     ");" +
     "ALTER SEQUENCE job_snapshots_job_id_seq OWNED BY job_snapshots.job_id;" +
