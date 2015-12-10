@@ -127,6 +127,11 @@ OR if you have a local postgres with correct user acc:
 npm test
 ```
 
+## Inspect the test db
+```
+docker-compose run psql
+```
+
 
 ## License
 
