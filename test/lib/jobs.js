@@ -3,6 +3,8 @@ var expect = require('expect.js'),
     Sinon = require('sinon'),
     async = require('async'),
     _ = require('lodash'),
+    jobsModel = require('../../models/jobs'),
+    jobsModelTest = require('../../models/jobs_test'),
     testHelper = require('../helper');
 
 describe('Jobs', function() {
@@ -13,7 +15,6 @@ describe('Jobs', function() {
       if (err) return done(err);
       dbs = results;
       jobs = require('../../lib/jobs')({ db: process.env.DATABASE_URL });
-      jobsModelTest = require('../../models/jobs_test');
       done();
     });
   });
@@ -23,23 +24,6 @@ describe('Jobs', function() {
     // https://github.com/brianc/node-postgres/wiki/Client#wiki-method-end
     // _.invoke(dbs, 'end');
   });
-
-  function lockJob(db, jobId, callback) {
-    // Note: In this test we use the job_snapshot id not the job_id as
-    // that is how the locking is done in the query that grabs the next
-    // job.
-    // This only locks one row (not all the snapshots for the job). It
-    // probably would be fine to lock on the job_id, but it is not
-    // necessary as we should only ever have one snapshot of a given job
-    // that is up for processing...
-    db.query('select pg_advisory_lock(id) from job_snapshots ' +
-      'where job_id = $1 and processed IS NULL', [jobId], callback);
-  }
-
-  function unlockJob(db, jobId, callback) {
-    db.query('select pg_advisory_unlock(id) from job_snapshots ' +
-      'where job_id = $1', [jobId], callback);
-  }
 
   describe('#create', function() {
     beforeEach(function(done) {
@@ -276,7 +260,7 @@ describe('Jobs', function() {
         }], lockFirstJob);
 
         function lockFirstJob() {
-          lockJob(dbs[1], 1, done);
+          jobsModel.obtainLock(dbs[1], 1, done);
         }
       });
     });
@@ -372,38 +356,32 @@ describe('Jobs', function() {
     });
 
     describe('when called on a locked job', function() {
-      beforeEach(function(done) {
+      it('waits until the lock is ceeded', function(done) {
         jobsModelTest.setJobs(dbs[1], [{
           job_id: 1,
           data: {
             retriesRemaining: 1
           },
           process_at: moment().add('milliseconds', 10000).toDate()
-        }], lockFirstJob);
+        }], lockJob);
 
-        function lockFirstJob(err) {
+        var locked = true;
+        function lockJob(err) {
           if (err) return done(err);
-          lockJob(dbs[1], 1, done);
+          jobsModel.obtainLock(dbs[1], 1, begin);
         }
-      });
-
-      it('waits until the lock is ceeded',
-          function(done) {
-        var secondOne = false;
-
-        var iterator = function(err, job, cb) {
-
-          // This second call should not get service right now
-          jobs.processNow(1, function(jobId, jobData, cb) {
-            secondOne = true;
-            cb();
-          });
-          expect(secondOne).to.be(false);
+        function begin(err) {
+          if (err) return done(err);
+          jobs.processNow(1, afterUnlock, done);
+          setTimeout(function() {
+            locked = false;
+            jobsModel.unlock(dbs[1], 1);
+          }, 1);
+        }
+        function afterUnlock(err, job, cb) {
+          expect(locked).to.be(false);
           cb();
-        };
-
-        // Run the test.
-        jobs.processNow(1, iterator, done);
+        }
       });
     });
     describe('when called on a job that does not exist', function() {
@@ -464,6 +442,80 @@ describe('Jobs', function() {
             expect(jobData.changed).to.be(true);
             cb(null, jobData);
           }
+        });
+      });
+    });
+  });
+
+  describe('#maybeProcessNow', function() {
+    describe('when called on a not locked job', function() {
+      beforeEach(function(done) {
+        // Set up some jobs.
+        jobsModelTest.setJobs(dbs[1], [{
+          job_id: 1,
+          data: {
+            retriesRemaining: 1
+          },
+          process_at: moment().add('milliseconds', 10000).toDate()
+        }, {
+          job_id: 2,
+          data: {
+            retriesRemaining: 5
+          },
+          process_at: moment().add('milliseconds', 40000).toDate()
+        }], done);
+      });
+
+      it('runs the callback on the requested job, updating it', function(done) {
+        var iterator = function(id, job, cb) {
+          expect(id).to.be(1);
+          expect(job).to.have.property('retriesRemaining', 1);
+          job.retriesRemaining = 2;
+          return cb(null, job, 200);
+        };
+
+        // Set up condition
+        var checkConditions = function() {
+          jobs.maybeProcessNow(1, function(jobId, jobData, cb) {
+            expect(jobData.retriesRemaining).to.be(2);
+            cb(null, {}, null);
+          }, done);
+        };
+
+        // Run the test.
+        jobs.maybeProcessNow(1, iterator, checkConditions);
+      });
+    });
+
+    describe('when called on a locked job', function() {
+      beforeEach(function(done) {
+        jobsModelTest.setJobs(dbs[1], [{
+          job_id: 1,
+          data: {
+            retriesRemaining: 1
+          },
+          process_at: moment().add('milliseconds', 10000).toDate()
+        }], lockFirstJob);
+
+        function lockFirstJob(err) {
+          if (err) return done(err);
+          require('../../models/jobs').obtainLock(dbs[1], 1, done);
+        }
+      });
+
+      it('should not process the job and should return an error', function(done) {
+        var secondOne = false;
+
+        var iterator = function(err, job, cb) {
+          expect().fail('This should not be called');
+          cb();
+        };
+
+        // Run the test.
+        jobs.maybeProcessNow(1, iterator, function(err) {
+          expect(err).to.be.ok();
+          expect(err.type).to.be('job_busy');
+          done();
         });
       });
     });

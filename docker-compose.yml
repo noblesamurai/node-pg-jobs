@@ -4,6 +4,7 @@ pg_jobs:
     - postgres 
   volumes:
     - ./lib:/code/lib
+    - ./models:/code/models
     - ./test:/code/test
     - ./package.json:/code/package.json
   environment:

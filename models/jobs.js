@@ -56,6 +56,15 @@ exports.unlock = function(db, jobId, callback) {
   db.query(sqlQueries.unlockJob, [jobId], callback);
 };
 
+// try to get a lock
+// @returns true if successful, false otherwise
+exports.maybeObtainLock = function(db, jobId, callback) {
+  db.query(sqlQueries.maybeObtainLockForJob, [jobId], function(err, result) {
+    if (err) return callback(err);
+    return callback(null, result.rows[0].pg_try_advisory_lock);
+  });
+};
+
 exports.obtainLock = function(db, jobId, callback) {
   db.query(sqlQueries.obtainLockForJob, [jobId], callback);
 };

@@ -164,6 +164,25 @@ describe('jobs model', function() {
       }
     });
   });
+
+  describe('#maybeObtainLock', function() {
+    it('returns true if we get a lock', function(done) {
+      jobsModel.maybeObtainLock(db, 42, function(err, lock) {
+        expect(lock).to.be(true);
+        done();
+      });
+    });
+
+    it('returns false if the job is busy and we can\'t get a lock', function(done) {
+      jobsModel.maybeObtainLock(db, 42, function(err, lock) {
+        expect(lock).to.be(true);
+        jobsModel.maybeObtainLock(db2, 42, function(err, lock) {
+          expect(lock).to.be(false);
+          done();
+        });
+      });
+    });
+  });
 });
 
 // vim: set et sw=2 ts=2 colorcolumn=80:
