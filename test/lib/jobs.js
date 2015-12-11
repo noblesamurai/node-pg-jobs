@@ -144,10 +144,11 @@ describe('Jobs', function() {
 
       var iterator = function(id, job, cb) {
         cb(null, {}, moment.duration(10, 'days').asMilliseconds());
+        jobs.stopProcessing();
       };
 
       // Set up our condition
-      jobs.eventEmitter.on('processCommitted', function() {
+      function expectations() {
         jobsModelTest.scheduledJobs(dbs[1], function(err, result) {
           if (err) return done(err);
           expect(result.length, 'length of job queue').to.equal(1);
@@ -160,16 +161,12 @@ describe('Jobs', function() {
             // still pass (as it should) if the test is run within ten
             // days of going off daylight savings time.
             diff(moment(), 'hours')).to.equal(10 * 24);
+          done();
         });
-      });
-
-      jobs.eventEmitter.on('drain', function() {
-        jobs.stopProcessing();
-        done();
-      });
+      }
 
       // Run the test
-      jobs.process(iterator);
+      jobs.process(iterator, expectations);
     });
 
     it('will re-execute when processIn is non-null', function(done) {
