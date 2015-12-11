@@ -9,6 +9,7 @@ pg_jobs:
   environment:
     - DATABASE_URL=pg://postgres:postgres@postgres/pg_jobs_test
     - NODE_ENV=test
+    - DEBUG=${DEBUG}
 
 postgres:
   image: postgres

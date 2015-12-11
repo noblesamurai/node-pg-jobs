@@ -203,6 +203,27 @@ describe('Jobs', function() {
       }
     });
 
+    it('will not re-execute when processIn is undefined', function(done) {
+      jobs.create({}, null, created);
+
+      var failedJobId;
+      function created(err, jobId) {
+        if (err) return done(err);
+        failedJobId = jobId;
+        jobs.processNow(jobId, iterator, function() {
+          jobs.create({}, 0, function() {});
+        });
+      }
+
+      function iterator(jobId, data, callback) {
+        jobs.process(function(jobId, jobData, callback) {
+          expect(jobId).to.not.be(failedJobId);
+          done();
+        });
+        callback(null, {});
+      }
+    });
+
     // Just binds test and prep together.
     describe('with a delayed job', function() {
       beforeEach(function(done) {
