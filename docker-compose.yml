@@ -4,11 +4,13 @@ pg_jobs:
     - postgres 
   volumes:
     - ./lib:/code/lib
+    - ./models:/code/models
     - ./test:/code/test
     - ./package.json:/code/package.json
   environment:
     - DATABASE_URL=pg://postgres:postgres@postgres/pg_jobs_test
     - NODE_ENV=test
+    - DEBUG=${DEBUG}
 
 postgres:
   image: postgres

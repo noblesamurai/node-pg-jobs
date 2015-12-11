@@ -14,7 +14,7 @@ describe('Jobs', function() {
       dbs = results;
       jobs = require('../../lib/jobs')({ db: process.env.DATABASE_URL });
       jobsModelTest = require('../../models/jobs_test');
-      done();
+      jobsModelTest.deleteJobs(dbs[0], done);
     });
   });
 
@@ -110,71 +110,6 @@ describe('Jobs', function() {
       }
     };
 
-    var maybeServiceJobCount, jobUpdatedCount;
-
-    var maybeServiceJob = function() {
-      maybeServiceJobCount++;
-    };
-
-    var jobUpdated = function() {
-      jobUpdatedCount++;
-    };
-
-    beforeEach(function() {
-      maybeServiceJobCount = 0;
-      jobUpdatedCount = 0;
-
-      jobs.eventEmitter.removeAllListeners();
-      jobs.eventEmitter.on('jobUpdated', jobUpdated);
-      jobs.eventEmitter.on('maybeServiceJob', maybeServiceJob);
-    });
-
-    afterEach(function() {
-      jobs.stopProcessing();
-    });
-
-    it('re-schedules a job iff a non-null serviceNextIn property is provided',
-          function(done) {
-      // Set up jobs data
-      jobsModelTest.setJobs(dbs[1], [{
-        data: {
-          retriesRemaining: 3
-        },
-        process_at: moment().add('milliseconds', 1)
-      }, {
-        data: {
-          retriesRemaining: 2
-        },
-        process_at: moment().add('milliseconds', 4)
-      }, {
-        data: {
-          retriesRemaining: 2
-        },
-        process_at: moment().add('milliseconds', 5)
-      }]);
-
-      // Set up our condition
-      jobs.eventEmitter.on('processCommitted', function() {
-        // Should need 10 iterations for all jobs to retried out of existence.
-        // Each job will be provided service until no retries remaining, then
-        // once more to figure out that we need to permanently fail it (and
-        // hence not requeue.)
-        // I.e. retries remaining for each job + no. jobs initially == 10
-        if (jobUpdatedCount == 10) {
-          jobsModelTest.scheduledJobs(dbs[1], function(err, result) {
-            expect(result.length, 'length of job queue').to.equal(0);
-          });
-        }
-      });
-      jobs.eventEmitter.on('drain', function() {
-        jobs.stopProcessing();
-        done();
-      });
-
-      // Run the test
-      jobs.process(jobIterator);
-    });
-
     it('reschedules a job to have the correct execution time', function(done) {
       // Set up jobs data
       jobsModelTest.setJobs(dbs[1], [{
@@ -186,10 +121,11 @@ describe('Jobs', function() {
 
       var iterator = function(id, job, cb) {
         cb(null, {}, moment.duration(10, 'days').asMilliseconds());
+        jobs.stopProcessing();
       };
 
       // Set up our condition
-      jobs.eventEmitter.on('processCommitted', function() {
+      function expectations() {
         jobsModelTest.scheduledJobs(dbs[1], function(err, result) {
           if (err) return done(err);
           expect(result.length, 'length of job queue').to.equal(1);
@@ -202,16 +138,63 @@ describe('Jobs', function() {
             // still pass (as it should) if the test is run within ten
             // days of going off daylight savings time.
             diff(moment(), 'hours')).to.equal(10 * 24);
+          done();
         });
-      });
-
-      jobs.eventEmitter.on('drain', function() {
-        jobs.stopProcessing();
-        done();
-      });
+      }
 
       // Run the test
-      jobs.process(iterator);
+      jobs.process(iterator, expectations);
+    });
+
+    it('will re-execute when processIn is non-null', function(done) {
+      jobs.create({}, null, created);
+
+      function created(err, jobId) {
+        if (err) return done(err);
+        jobs.processNow(jobId, next);
+      }
+
+      function next(jobId, data, callback) {
+        jobs.process(function(jobId, jobData) {
+          jobs.stopProcessing();
+          done();
+        });
+        setTimeout(function() {callback(null, {}, 1);}, 1);
+      }
+    });
+
+    it('will re-execute when processIn is zero', function(done) {
+      jobs.create({}, null, created);
+
+      function created(err, jobId) {
+        if (err) return done(err);
+        jobs.processNow(jobId, iterator);
+      }
+
+      function iterator(jobId, data, callback) {
+        jobs.process(function(jobId, jobData) {
+          jobs.stopProcessing();
+          done();
+        });
+        setTimeout(function() {callback(null, {}, 0);}, 1);
+      }
+    });
+
+    it('will not re-execute when processIn is undefined', function(done) {
+      jobs.create({}, 0, created);
+
+      function created(err) {
+        if (err) return done(err);
+
+        jobs.process(iterator, done);
+
+        var callCount = 0;
+        function iterator(jobId, jobData, callback) {
+          expect(callCount++).to.be(0);
+          callback(null, {}, undefined);
+          setTimeout(function() { jobs.stopProcessing(); }, 1);
+        }
+      }
     });
 
     // Just binds test and prep together.
@@ -249,6 +232,7 @@ describe('Jobs', function() {
         function iterator(jobId, jobData, cb) {
           if (jobData.name === 'jobOne') throw new Error('should not service jobOne before jobTwo');
           cb();
+          jobs.stopProcessing();
           done();
         }
       });
@@ -283,49 +267,40 @@ describe('Jobs', function() {
 
     //bind setup and test together
     describe('when called on a job', function() {
-      beforeEach(function(done) {
-        jobsModelTest.setJobs(dbs[1], [{
-          job_id: 123,
-          data: [],
-          process_at: moment()
-        }], done);
-      });
-
-      it('saves the new job data given to the db, in a non-destructive way',
-          function(done) {
-        var iterator = function(id, job, cb) {
-          return cb(null, {
-            state: 'complete',
-            name: "tim"
-          }, null);
-        };
-
-        jobs.eventEmitter.on('processCommitted', function() {
-          jobsModelTest.getJobs(dbs[1], function(err, result) {
-            if (err) return done(err);
-            expect(result).to.have.length(2);
-          });
+      it('saves the new job data in a non-destructive way', function(done) {
+        jobs.create({things: [1]}, 0, function(err, jobId) {
+          jobs.process(iterator, done);
         });
 
-        jobs.eventEmitter.on('drain', function() {
-          jobs.stopProcessing();
-          done();
-        });
-
-        jobs.process(iterator);
+        var callCount = 0;
+        function iterator(jobId, jobData, callback) {
+          console.log(jobId, jobData);
+          if (callCount++ === 0) {
+            jobData.things.push(2);
+            callback(null, jobData, 0);
+          } else {
+            expect(jobData.things.length).to.be(2);
+            jobs.stopProcessing();
+            callback(null, jobData, null);
+          }
+        }
       });
 
       it('provides the job id to the iterator', function(done) {
-        function iterator(id, job, cb) {
-          expect(id).to.equal(123);
-          jobs.stopProcessing();
-          cb(null, {}, null);
-        }
-        jobs.eventEmitter.on('stopProcess', done);
-        jobs.process(iterator);
+        jobs.create({}, 0, function(err, jobId) {
+          if(err) return done(err);
+
+          jobs.process(iterator, done);
+
+          function iterator(id, job, cb) {
+            expect(id).to.equal(jobId);
+            jobs.stopProcessing();
+            cb(null, {}, null);
+          }
+        });
       });
     });
-    if('calls the callback when finished', function(done) {
+    it('calls the callback when finished', function(done) {
       jobs.process(function() {}, done);
       jobs.stopProcessing();
     });
@@ -420,11 +395,15 @@ describe('Jobs', function() {
     describe('when the worker calls done() with an error', function() {
       it('calls the callback with an error', function(done) {
         var iterator = Sinon.stub().callsArgWith(2, 'yo');
-        jobs.processNow(1, iterator, expectations);
-        function expectations(err) {
-          expect(err).to.equal('yo');
-          done();
-        }
+
+        jobs.create({}, null, function(err, jobId) {
+          if (err) return done(err);
+          jobs.processNow(jobId, iterator, expectations);
+          function expectations(err) {
+            expect(err).to.equal('yo');
+            done();
+          }
+        });
       });
     });
     it('always gives waiting processNow() requests fresh data', function(done) {
