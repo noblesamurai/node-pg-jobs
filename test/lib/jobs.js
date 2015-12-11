@@ -213,6 +213,21 @@ describe('Jobs', function() {
       // Run the test
       jobs.process(iterator);
     });
+    it('will re-execute when processIn is zero', function(done) {
+      jobs.create({}, null, created);
+
+      function created(err, jobId) {
+        if (err) return done(err);
+        jobs.processNow(jobId, iterator);
+      }
+
+      function iterator(jobId, data, callback) {
+        jobs.process(function(jobId, jobData, callback) {
+          done();
+        });
+        setTimeout(function() {callback(null, {}, 0);}, 1);
+      }
+    });
 
     // Just binds test and prep together.
     describe('with a delayed job', function() {
