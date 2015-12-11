@@ -27,6 +27,10 @@ exports.setJobs = function(db, newJobs, callback) {
   }
 };
 
+exports.deleteJobs = function(db, callback) {
+  db.query('delete from job_snapshots', callback);
+};
+
 exports.getJobs = function(db, callback) {
   var query = job_snapshots.select(job_snapshots.star()).toQuery();
   db.query(query, function(err, result) {
