@@ -213,6 +213,24 @@ describe('Jobs', function() {
       // Run the test
       jobs.process(iterator);
     });
+
+    it('will re-execute when processIn is non-null', function(done) {
+      jobs.create({}, null, created);
+
+      function created(err, jobId) {
+        if (err) return done(err);
+        jobs.processNow(jobId, iterator);
+      }
+
+      function iterator(jobId, data, callback) {
+        jobs.process(function(jobId, jobData, callback) {
+          jobs.stopProcessing();
+          done();
+        });
+        setTimeout(function() {callback(null, {}, 1);}, 1);
+      }
+    });
+
     it('will re-execute when processIn is zero', function(done) {
       jobs.create({}, null, created);
 
@@ -223,6 +241,7 @@ describe('Jobs', function() {
 
       function iterator(jobId, data, callback) {
         jobs.process(function(jobId, jobData, callback) {
+          jobs.stopProcessing();
           done();
         });
         setTimeout(function() {callback(null, {}, 0);}, 1);
@@ -340,7 +359,7 @@ describe('Jobs', function() {
         jobs.process(iterator);
       });
     });
-    if('calls the callback when finished', function(done) {
+    it('calls the callback when finished', function(done) {
       jobs.process(function() {}, done);
       jobs.stopProcessing();
     });
