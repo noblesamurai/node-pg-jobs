@@ -133,48 +133,6 @@ describe('Jobs', function() {
       jobs.stopProcessing();
     });
 
-    it('re-schedules a job iff a non-null serviceNextIn property is provided',
-          function(done) {
-      // Set up jobs data
-      jobsModelTest.setJobs(dbs[1], [{
-        data: {
-          retriesRemaining: 3
-        },
-        process_at: moment().add('milliseconds', 1)
-      }, {
-        data: {
-          retriesRemaining: 2
-        },
-        process_at: moment().add('milliseconds', 4)
-      }, {
-        data: {
-          retriesRemaining: 2
-        },
-        process_at: moment().add('milliseconds', 5)
-      }]);
-
-      // Set up our condition
-      jobs.eventEmitter.on('processCommitted', function() {
-        // Should need 10 iterations for all jobs to retried out of existence.
-        // Each job will be provided service until no retries remaining, then
-        // once more to figure out that we need to permanently fail it (and
-        // hence not requeue.)
-        // I.e. retries remaining for each job + no. jobs initially == 10
-        if (jobUpdatedCount == 10) {
-          jobsModelTest.scheduledJobs(dbs[1], function(err, result) {
-            expect(result.length, 'length of job queue').to.equal(0);
-          });
-        }
-      });
-      jobs.eventEmitter.on('drain', function() {
-        jobs.stopProcessing();
-        done();
-      });
-
-      // Run the test
-      jobs.process(jobIterator);
-    });
-
     it('reschedules a job to have the correct execution time', function(done) {
       // Set up jobs data
       jobsModelTest.setJobs(dbs[1], [{
