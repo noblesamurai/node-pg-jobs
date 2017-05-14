@@ -19,7 +19,7 @@ consider the job for service.
  *                     and up to you.
  * @param {int} processIn The job will not get service until this many ms have
                           elapsed. Set to null if you do not want to service it again.
- * @param {function} done Callback.
+ * @param {function} done Callback - called when job is enqueued (or on error).
  */
 jobs.create(jobData, processIn, done);
 ```
