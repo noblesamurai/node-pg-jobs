@@ -101,6 +101,8 @@ jobs.processNow(id, worker, callback);
 ```
 
 ## Running migrations
+(Required to create the necessary tables etc).
+
 ```script
 npm install -g db-migrate
 npm install -g pg
